@@ -1,0 +1,8 @@
+Math:
+minu points to Math.Min, it's just unassigneds
+AlignPtr giver ikke mening
+
+int64 > long
+uint64 > ulong
+int6 > short
+uint16 > ushort
