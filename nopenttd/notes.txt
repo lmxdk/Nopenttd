@@ -8,3 +8,14 @@ int6 > short
 uint16 > ushort
 
 FOR_EACH_SET_BIT_EX > convert to linq expression
+
+SmallVec
+Find > FindIndex can ikke returnere pointer
+End > Removed = Length()	
+Begin > Removed = 0
+Compact > Removed ??? forstår ikke
+
+AutoFreeSmallVector > SmallVec
+AutoDeleteSmallVector > AutoFreeSmallVector
+
+......
