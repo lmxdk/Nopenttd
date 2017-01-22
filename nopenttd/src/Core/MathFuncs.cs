@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 
 namespace Nopenttd.Core
 {
-    public class Math
+    public class MathFuncs
     {
 /**
  * Compute least common multiple (lcm) of arguments \a a and \a b, the smallest

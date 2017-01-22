@@ -9,6 +9,7 @@
 
 /** @file bitmath_func.hpp Functions related to bit mathematics. */
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Nopenttd.Core
@@ -199,9 +200,6 @@ namespace Nopenttd.Core
 }
 
 
-/** Lookup table to check which bit is set in a 6 bit variable */
-static byte[] _ffb_64 = new byte[64];
-
 /**
  * Returns the first non-zero bit in a 6-bit value (from right).
  *
@@ -323,98 +321,183 @@ static byte[] _ffb_64 = new byte[64];
 	return (int)(x << n | x >> (sizeof(int) * 8 - n));
 }
 
-/**
- * ROtate \a x Right by \a n
- *
- * @note Assumes a byte has 8 bits
- * @param x The value which we want to rotate
- * @param n The number how many we want to rotate
- * @pre n < sizeof(T) * 8
- * @return A bit rotated number
- */
-template <typename T>
-static inline T ROR(T x, byte n)
-{
-	return (T)(x >> n | x << (sizeof(x) * 8 - n));
-}
+        /**
+         * ROtate \a x Right by \a n
+         *
+         * @note Assumes a byte has 8 bits
+         * @param x The value which we want to rotate
+         * @param n The number how many we want to rotate
+         * @pre n < sizeof(T) * 8
+         * @return A bit rotated number
+         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int ROR(int x, byte n)
+        {
+	        return (int)(x >> n | x << (sizeof(int) * 8 - n));
+        }
 
-/**
- * Do an operation for each set bit in a value.
- *
- * This macros is used to do an operation for each set
- * bit in a variable. The second parameter is a
- * variable that is used as the bit position counter.
- * The fourth parameter is an expression of the bits
- * we need to iterate over. This expression will be
- * evaluated once.
- *
- * @param Tbitpos_type Type of the position counter variable.
- * @param bitpos_var   The position counter variable.
- * @param Tbitset_type Type of the bitset value.
- * @param bitset_value The bitset value which we check for bits.
- *
- * @see FOR_EACH_SET_BIT
- */
-#define FOR_EACH_SET_BIT_EX(Tbitpos_type, bitpos_var, Tbitset_type, bitset_value) \
-	for (                                                                           \
-		Tbitset_type ___FESBE_bits = (bitpos_var = (Tbitpos_type)0, bitset_value);    \
-		___FESBE_bits != (Tbitset_type)0;                                             \
-		___FESBE_bits = (Tbitset_type)(___FESBE_bits >> 1), bitpos_var++              \
-	)                                                                               \
-		if ((___FESBE_bits & 1) != 0)
 
-/**
- * Do an operation for each set set bit in a value.
- *
- * This macros is used to do an operation for each set
- * bit in a variable. The first parameter is a variable
- * that is used as the bit position counter.
- * The second parameter is an expression of the bits
- * we need to iterate over. This expression will be
- * evaluated once.
- *
- * @param bitpos_var   The position counter variable.
- * @param bitset_value The value which we check for set bits.
- */
-#define FOR_EACH_SET_BIT(bitpos_var, bitset_value) FOR_EACH_SET_BIT_EX(uint, bitpos_var, uint, bitset_value)
+        /**
+         * ROtate \a x Right by \a n
+         *
+         * @note Assumes a byte has 8 bits
+         * @param x The value which we want to rotate
+         * @param n The number how many we want to rotate
+         * @pre n < sizeof(T) * 8
+         * @return A bit rotated number
+         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint RotateRight(uint x, byte n)
+        {
+            return (uint)(x >> n | x << (sizeof(uint) * 8 - n));
+        }
 
-#if defined(__APPLE__)
-	/* Make endian swapping use Apple's macros to increase speed
-	 * (since it will use hardware swapping if available).
-	 * Even though they should return uint16 and uint32, we get
-	 * warnings if we don't cast those (why?) */
-	#define BSWAP32(x) ((uint32)CFSwapInt32(x))
-	#define BSWAP16(x) ((uint16)CFSwapInt16(x))
-#elif defined(_MSC_VER)
-	/* MSVC has intrinsics for swapping, resulting in faster code */
-	#define BSWAP32(x) (_byteswap_ulong(x))
-	#define BSWAP16(x) (_byteswap_ushort(x))
-#else
-	/**
-	 * Perform a 32 bits endianness bitswap on x.
-	 * @param x the variable to bitswap
-	 * @return the bitswapped value.
-	 */
-	static inline uint32 BSWAP32(uint32 x)
+        /**
+         * Do an operation for each set bit in a value.
+         *
+         * This macros is used to do an operation for each set
+         * bit in a variable. The second parameter is a
+         * variable that is used as the bit position counter.
+         * The fourth parameter is an expression of the bits
+         * we need to iterate over. This expression will be
+         * evaluated once.
+         *
+         * @param Tbitpos_type Type of the position counter variable.
+         * @param bitpos_var   The position counter variable.
+         * @param Tbitset_type Type of the bitset value.
+         * @param bitset_value The bitset value which we check for bits.
+         *
+         * @see FOR_EACH_SET_BIT
+         */
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //TODO FOR_EACH_SET_BIT_EX
+        //#define FOR_EACH_SET_BIT_EX(Tbitpos_type, bitpos_var, Tbitset_type, bitset_value) \
+        //	for (                                                                           \
+        //		Tbitset_type ___FESBE_bits = (bitpos_var = (Tbitpos_type)0, bitset_value);    \
+        //		___FESBE_bits != (Tbitset_type)0;                                             \
+        //		___FESBE_bits = (Tbitset_type)(___FESBE_bits >> 1), bitpos_var++              \
+        //	)                                                                               \
+        //		if ((___FESBE_bits & 1) != 0)
+
+        /**
+         * Do an operation for each set set bit in a value.
+         *
+         * This macros is used to do an operation for each set
+         * bit in a variable. The first parameter is a variable
+         * that is used as the bit position counter.
+         * The second parameter is an expression of the bits
+         * we need to iterate over. This expression will be
+         * evaluated once.
+         *
+         * @param bitpos_var   The position counter variable.
+         * @param bitset_value The value which we check for set bits.
+         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void FOR_EACH_SET_BIT(uint bitpos_var, uint bitset_value, Action action)
+        {
+            for (uint bits = bitpos_var = 0;
+                bits != (uint) 0;
+                bits = (uint) (bits >> 1))
+            {
+                bitpos_var++;
+                if ((bits & 1) != 0)
+                {
+                    action();
+                } 
+            }
+        }
+
+        /**
+         * Perform a 32 bits endianness bitswap on x.
+         * @param x the variable to bitswap
+         * @return the bitswapped value.
+         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint BSWAP32(uint x)
 	{
-#if !defined(__ICC) && defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4)  && __GNUC_MINOR__ >= 3))
-		/* GCC >= 4.3 provides a builtin, resulting in faster code */
-		return (uint32)__builtin_bswap32((int32)x);
-#else
 		return ((x >> 24) & 0xFF) | ((x >> 8) & 0xFF00) | ((x << 8) & 0xFF0000) | ((x << 24) & 0xFF000000);
-#endif /* defined(__GNUC__) */
 	}
 
-	/**
-	 * Perform a 16 bits endianness bitswap on x.
-	 * @param x the variable to bitswap
-	 * @return the bitswapped value.
-	 */
-	static inline uint16 BSWAP16(uint16 x)
+        /**
+         * Perform a 16 bits endianness bitswap on x.
+         * @param x the variable to bitswap
+         * @return the bitswapped value.
+         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort BSWAP16(ushort x)
 	{
-		return (x >> 8) | (x << 8);
+		return (ushort)((x >> 8) | (x << 8));
 	}
-#endif /* __APPLE__ */
-    
-}
+
+
+        //FROM bitmath_func.cpp
+        /** Lookup table to check which bit is set in a 6 bit variable */
+        static readonly byte[] _ffb_64 = new byte[64] {
+    0,  0,  1,  0,  2,  0,  1,  0,
+    3,  0,  1,  0,  2,  0,  1,  0,
+    4,  0,  1,  0,  2,  0,  1,  0,
+    3,  0,  1,  0,  2,  0,  1,  0,
+    5,  0,  1,  0,  2,  0,  1,  0,
+    3,  0,  1,  0,  2,  0,  1,  0,
+    4,  0,  1,  0,  2,  0,  1,  0,
+    3,  0,  1,  0,  2,  0,  1,  0,
+};
+
+        /**
+         * Search the first set bit in a 32 bit variable.
+         *
+         * This algorithm is a static implementation of a log
+         * congruence search algorithm. It checks the first half
+         * if there is a bit set search there further. And this
+         * way further. If no bit is set return 0.
+         *
+         * @param x The value to search
+         * @return The position of the first bit set
+         */
+        public static byte FindFirstBit(uint x)
+        {
+            if (x == 0) return 0;
+            /* The macro FIND_FIRST_BIT is better to use when your x is
+              not more than 128. */
+
+            byte pos = 0;
+
+            if ((x & 0x0000ffff) == 0) { x >>= 16; pos += 16; }
+            if ((x & 0x000000ff) == 0) { x >>= 8; pos += 8; }
+            if ((x & 0x0000000f) == 0) { x >>= 4; pos += 4; }
+            if ((x & 0x00000003) == 0) { x >>= 2; pos += 2; }
+            if ((x & 0x00000001) == 0) { pos += 1; }
+
+            return pos;
+        }
+
+        /**
+         * Search the last set bit in a 64 bit variable.
+         *
+         * This algorithm is a static implementation of a log
+         * congruence search algorithm. It checks the second half
+         * if there is a bit set search there further. And this
+         * way further. If no bit is set return 0.
+         *
+         * @param x The value to search
+         * @return The position of the last bit set
+         */
+        public static byte FindLastBit(long x)
+        {
+            if (x == 0) return 0;
+
+            byte pos = 0;
+
+            //if ((x & 0xffffffff00000000) != 0) { x >>= 32; pos += 32; }
+            if ((x & ~0x00000000ffffffff) != 0) { x >>= 32; pos += 32; }
+            if ((x & 0x00000000ffff0000) != 0) { x >>= 16; pos += 16; }
+            if ((x & 0x000000000000ff00) != 0) { x >>= 8; pos += 8; }
+            if ((x & 0x00000000000000f0) != 0) { x >>= 4; pos += 4; }
+            if ((x & 0x000000000000000c) != 0) { x >>= 2; pos += 2; }
+            if ((x & 0x0000000000000002) != 0) { pos += 1; }
+
+            return pos;
+        }
+
+    }
 }
