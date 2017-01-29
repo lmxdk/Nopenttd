@@ -45,5 +45,26 @@ namespace Nopenttd.Tiles
          * The very nice invalid tile marker
          */
         public static readonly TileIndex INVALID_TILE = 0xffff;
+
+
+
+
+        /** Minimal and maximal map width and height */
+        public const uint MIN_MAP_SIZE_BITS = 6;                      ///< Minimal size of map is equal to 2 ^ MIN_MAP_SIZE_BITS
+        public const uint MAX_MAP_SIZE_BITS = 12;                     ///< Maximal size of map is equal to 2 ^ MAX_MAP_SIZE_BITS
+        public const uint MIN_MAP_SIZE = 1 << (int)MIN_MAP_SIZE_BITS; ///< Minimal map size = 64
+        public const uint MAX_MAP_SIZE = 1 << (int)MAX_MAP_SIZE_BITS; ///< Maximal map size = 4096
+
+        /**
+         * Approximation of the length of a straight track, relative to a diagonal
+         * track (ie the size of a tile side).
+         *
+         * #defined instead of const so it can
+         * stay integer. (no runtime float operations) Is this needed?
+         * Watch out! There are _no_ brackets around here, to prevent intermediate
+         * rounding! Be careful when using this!
+         * This value should be sqrt(2)/2 ~ 0.7071
+         */
+         public const float STRAIGHT_TRACK_LENGTH = 7071/10000;
     }
 }

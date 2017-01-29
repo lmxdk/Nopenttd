@@ -56,6 +56,7 @@
     <Compile Include="src\Slopes\Slope.cs" />
     <Compile Include="src\Slopes\SlopeConstants.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
+    <Compile Include="src\Tiles\TileExtended.cs" />
     <Compile Include="src\Tiles\TileIndex.cs" />
     <Compile Include="src\Tiles\TropicZone.cs" />
   </ItemGroup>
@@ -98,6 +99,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Slopes\Foundation.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Tiles\map_type.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
