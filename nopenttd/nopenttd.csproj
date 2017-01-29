@@ -52,6 +52,9 @@
     <Compile Include="src\Core\SavedRandomSeeds.cs" />
     <Compile Include="src\Core\SmallStackItem.cs" />
     <Compile Include="src\Core\StringList.cs" />
+    <Compile Include="src\Slopes\Corner.cs" />
+    <Compile Include="src\Slopes\Slope.cs" />
+    <Compile Include="src\Slopes\SlopeConstants.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
     <Compile Include="src\Tiles\TileIndex.cs" />
     <Compile Include="src\Tiles\TropicZone.cs" />
@@ -92,6 +95,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Tiles\TileType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Slopes\Foundation.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

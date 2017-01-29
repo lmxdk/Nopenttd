@@ -1,3 +1,5 @@
+using System;
+
 namespace Nopenttd.Core.Geometry
 {
 
@@ -16,8 +18,8 @@ namespace Nopenttd.Core.Geometry
         public static Dimension maxdim(ref Dimension d1, ref Dimension d2)
         {
             var dim = new Dimension();
-            dim.width = max(d1.width, d2.width);
-            dim.height = max(d1.height, d2.height);
+            dim.width = Math.Max(d1.width, d2.width);
+            dim.height = Math.Max(d1.height, d2.height);
             return dim;
         }
     };
