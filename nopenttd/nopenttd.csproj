@@ -31,6 +31,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.4.4.1\lib\net45\NLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -52,12 +56,16 @@
     <Compile Include="src\Core\SavedRandomSeeds.cs" />
     <Compile Include="src\Core\SmallStackItem.cs" />
     <Compile Include="src\Core\StringList.cs" />
+    <Compile Include="src\Settings\Settings.cs" />
     <Compile Include="src\Slopes\Corner.cs" />
     <Compile Include="src\Slopes\Slope.cs" />
     <Compile Include="src\Slopes\SlopeConstants.cs" />
+    <Compile Include="src\Tiles\LevelMode.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
     <Compile Include="src\Tiles\TileExtended.cs" />
     <Compile Include="src\Tiles\TileIndex.cs" />
+    <Compile Include="src\Tiles\TileIndexDiff.cs" />
+    <Compile Include="src\Tiles\TileIndexDiffC.cs" />
     <Compile Include="src\Tiles\TropicZone.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -101,7 +109,13 @@
     <Compile Include="src\Slopes\Foundation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\Tiles\map_type.cs" />
+    <Compile Include="src\Tiles\Tile.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\map.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

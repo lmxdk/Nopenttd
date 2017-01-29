@@ -294,6 +294,11 @@ namespace Nopenttd.Core
             return (a < b) ? b - a : a - b;
         }
 
+        public static uint Delta(uint a, uint b)
+        {
+            return (a < b) ? b - a : a - b;
+        }
+
         /**
          * Checks if a value is between a window started at some base point.
          *

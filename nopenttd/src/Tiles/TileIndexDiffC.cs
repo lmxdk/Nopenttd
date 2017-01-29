@@ -7,7 +7,13 @@ namespace Nopenttd.Tiles
  * tiles as a pair of x and y value.
  */
     public struct TileIndexDiffC {
-        short x;        /// The x value of the coordinate
-        short y;        /// The y value of the coordinate
+        public short x;        /// The x value of the coordinate
+        public short y;        /// The y value of the coordinate
+
+        public TileIndexDiffC(short x, short y)
+        {
+            this.x = x;
+            this.y = y;
+        }
     };
 }
