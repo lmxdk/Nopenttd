@@ -1,4 +1,6 @@
+using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Nopenttd.Core
 {
@@ -13,11 +15,12 @@ namespace Nopenttd.Core
      * @param S The steps of allocation
      */
     //TODO DELETE
-    public class AutoFreeSmallVector<T> : SmallVector<T> where T : new() {
+    public class AutoFreeSmallVector<T> : SmallVector<T>, IDisposable
+    {
 
         ~AutoFreeSmallVector()
         {
-            Clear();
+            ReleaseUnmanagedResources();
         }
 
         /**
@@ -32,6 +35,17 @@ namespace Nopenttd.Core
             }
 
             items = 0;
+        }
+
+        private void ReleaseUnmanagedResources()
+        {
+            Clear();
+        }
+
+        public void Dispose()
+        {
+            ReleaseUnmanagedResources();
+            GC.SuppressFinalize(this);
         }
     };
 }

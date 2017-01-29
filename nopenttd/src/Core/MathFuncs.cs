@@ -331,20 +331,6 @@ namespace Nopenttd.Core
         }
 
         /**
-         * Type safe swap operation
-         * @param a variable to swap with b
-         * @param b variable to swap with a
-         */
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Swap<T>(ref T a, ref T b)
-        {
-            var t = a;
-            a = b;
-            b = t;
-        }
-
-        /**
          * Converts a "fract" value 0..255 to "percent" value 0..100
          * @param i value to convert, range 0..255
          * @return value in range 0..100

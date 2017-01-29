@@ -18,4 +18,8 @@ Compact > Removed ??? forstår ikke
 AutoFreeSmallVector > SmallVec
 AutoDeleteSmallVector > AutoFreeSmallVector
 
+SortFunc
+QSortT > Array.Sort
 ......
+
+ThreadObject_Win32 > ThreadObject

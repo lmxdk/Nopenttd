@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Nopenttd</RootNamespace>
     <AssemblyName>Nopenttd</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,22 +42,56 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="src\Core\AutoDeleteSmallVector.cs" />
+    <Compile Include="src\Core\AutoFreeSmallVector.cs" />
+    <Compile Include="src\Core\Exceptions\NotReachedException.cs" />
     <Compile Include="src\Core\Geometry\Dimension.cs" />
     <Compile Include="src\Core\Geometry\Point.cs" />
     <Compile Include="src\Core\Geometry\PointDimension.cs" />
     <Compile Include="src\Core\Geometry\Rect.cs" />
+    <Compile Include="src\Core\SavedRandomSeeds.cs" />
+    <Compile Include="src\Core\SmallStackItem.cs" />
+    <Compile Include="src\Core\StringList.cs" />
+    <Compile Include="src\Tiles\TileConstants.cs" />
+    <Compile Include="src\Tiles\TileIndex.cs" />
+    <Compile Include="src\Tiles\TropicZone.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Core\Geometry\Pair.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\Core\Math.cs" />
+    <Compile Include="src\Core\MathFuncs.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="src\Core\Math\" />
+    <Folder Include="src\Threading\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\Core\bitmath_func.cs" />
+    <Compile Include="src\Core\BitMath.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Core\Randomizer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Core\SmallVector.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Core\Sort.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Core\MemFuncs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Direction.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\DirectionExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\GoalType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Tiles\TileType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

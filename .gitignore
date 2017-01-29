@@ -1,2 +1,5 @@
 *.suo
 *.opendb
+nopenttd/obj/
+.VC.db
+*.VC.db

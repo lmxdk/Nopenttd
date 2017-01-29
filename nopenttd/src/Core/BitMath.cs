@@ -61,10 +61,10 @@ namespace Nopenttd.Core
          * @return The new value of \a x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T SB(T &x, byte s, byte n, U d)
+        public static uint SB(ref uint x, byte s, byte n, uint d)
 {
-	x &= (T)(~((((T)1U << n) - 1) << s));
-	x |= (T)(d << s);
+	x &= (uint)(~((((uint)1U << n) - 1) << s));
+	x |= (uint)(d << s);
 	return x;
 }
 
@@ -86,10 +86,10 @@ namespace Nopenttd.Core
          * @return The new value of \a x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T AB(T &x, byte s, byte n, U i)
+        public static uint AB(ref uint x, byte s, byte n, uint i)
 {
-	T mask = ((((T)1U << n) - 1) << s);
-	x = (T)((x & ~mask) | ((x + (i << s)) & mask));
+	uint mask = ((((uint)1U << n) - 1) << s);
+	x = (uint)((x & ~mask) | ((x + (i << s)) & mask));
 	return x;
 }
 

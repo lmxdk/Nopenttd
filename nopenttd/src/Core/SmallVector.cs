@@ -104,16 +104,16 @@ namespace Nopenttd.Core
          * Compact the list down to the smallest block size boundary.
          */
 
-        public void Compact()
-        {
-            if (newCapacity >= capacity)
-            {
-                return;
-            }
+        //public void Compact()
+        //{
+        //    if (newCapacity >= capacity)
+        //    {
+        //        return;
+        //    }
 
-            capacity = newCapacity;
-            data = ReallocT(data, capacity);
-        }
+        //    capacity = newCapacity;
+        //    data = ReallocT(data, capacity);
+        //}
 
         /**
          * Append an item and return it.
@@ -152,14 +152,11 @@ namespace Nopenttd.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Resize(uint numItems)
         {
-            var oldItems = items;    
-            capacity = items = capacity;
-            var oldData = data;
-            data = new T[capacity];
-
+            capacity = items = numItems;
+         
             if (items > 0)
             {
-                Array.Copy(oldData, data, Math.Min(items, oldItems));
+				Array.Resize(ref data, (int)items);
             }
         }
 

@@ -9,104 +9,129 @@
 
 /** @file smallstack_type.hpp Minimal stack that uses a pool to avoid pointers and doesn't allocate any heap memory if there is only one valid item. */
 
-#ifndef SMALLSTACK_TYPE_HPP
-#define SMALLSTACK_TYPE_HPP
-
-#include "smallvec_type.hpp"
-#include "../thread/thread.h"
-
 /**
  * A simplified pool which stores values instead of pointers and doesn't
  * redefine operator new/delete. It also never zeroes memory and always reuses
  * it.
  */
-template<typename Titem, typename Tindex, Tindex Tgrowth_step, Tindex Tmax_size>
-class SimplePool {
-public:
-	inline SimplePool() : first_unused(0), first_free(0), mutex(ThreadMutex::New()) {}
-	inline ~SimplePool() { delete this->mutex; }
+//template<typename TItem, typename uint, uint Tgrowth_step, uint max_size>
 
-	/**
+using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using Nopenttd.Core;
+
+public class SimplePool<TItem> {
+
+	private uint growthStep;
+	private uint maxSize;
+    private uint first_unused;
+    private uint first_free;
+    private readonly Mutex mutex;
+    private SmallVector<SimplePoolPoolItem> data;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SimplePool()
+    {
+        first_unused = 0;
+        first_free = 0;
+        mutex = new Mutex();
+    }
+	~SimplePool() { delete this->mutex; }
+
+    /**
 	 * Get the mutex. We don't lock the mutex in the pool methods as the
 	 * SmallStack isn't necessarily in a consistent state after each method.
 	 * @return Mutex.
 	 */
-	inline ThreadMutex *GetMutex() { return this->mutex; }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Mutex GetMutex() { return mutex; }
 
-	/**
+    /**
 	 * Get the item at position index.
 	 * @return Item at index.
 	 */
-	inline Titem &Get(Tindex index) { return this->data[index]; }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public TItem Get(uint index) { return data[index].value; }
 
-	/**
+    /**
 	 * Create a new item and return its index.
 	 * @return Index of new item.
 	 */
-	inline Tindex Create()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public uint Create()
 	{
-		Tindex index = this->FindFirstFree();
-		if (index < Tmax_size) {
-			this->data[index].valid = true;
-			this->first_free = index + 1;
-			this->first_unused = max(this->first_unused, this->first_free);
+		uint index = FindFirstFree();
+		if (index < maxSize) {
+			data[index].valid = true;
+			first_free = index + 1;
+			first_unused = Math.Max(first_unused, first_free);
 		}
 		return index;
 	}
 
-	/**
+    /**
 	 * Destroy (or rather invalidate) the item at the given index.
 	 * @param index Index of item to be destroyed.
 	 */
-	inline void Destroy(Tindex index)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Destroy(uint index)
 	{
-		this->data[index].valid = false;
-		this->first_free = min(this->first_free, index);
+		data[index].valid = false;
+		first_free = Math.Min(first_free, index);
 	}
 
-private:
-
-	inline Tindex FindFirstFree()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private uint FindFirstFree()
 	{
-		Tindex index = this->first_free;
-		for (; index < this->first_unused; index++) {
-			if (!this->data[index].valid) return index;
+		uint index = first_free;
+		for (; index < first_unused; index++)
+        {
+		    if (!data[index].valid)
+		    {
+		        return index;
+		    }
 		}
 
-		if (index >= this->data.Length() && index < Tmax_size) {
-			this->data.Resize(index + 1);
+		if (index >= data.Length() && index < maxSize)
+        {
+			data.Resize(index + 1);
 		}
 		return index;
 	}
 
-	struct SimplePoolPoolItem : public Titem {
-		bool valid;
-	};
+	struct SimplePoolPoolItem : IPoolItem<TItem>
+	{
+	    public TItem value { get; set; }
+		public bool valid;
+	}
+}
 
-	Tindex first_unused;
-	Tindex first_free;
-
-	ThreadMutex *mutex;
-	SmallVector<SimplePoolPoolItem, Tgrowth_step> data;
-};
+interface IPoolItem<TItem>
+{
+    TItem value;
+    bool valid;
+}
 
 /**
  * Base class for SmallStack. We cannot add this into SmallStack itself as
  * certain compilers don't like it.
  */
-template <typename Titem, typename Tindex>
-struct SmallStackItem {
-	Tindex next; ///< Pool index of next item.
-	Titem value; ///< Value of current item.
+//template <typename TItem, typename uint>
 
-	/**
-	 * Create a new item.
-	 * @param value Value of the item.
-	 * @param next Next item in the stack.
+/**
+	 * SmallStack item that can be kept in a pool.
 	 */
-	inline SmallStackItem(const Titem &value, Tindex next) :
-		next(next), value(value) {}
+public struct PooledSmallStack<TItem>
+{
+    public TItem value;
+    public bool valid;
+    public uint branch_count; /// Number of branches in the tree structure this item is parent of
 };
+
+public class SmallStackPool<TItem> : SmallStack<PooledSmallStack<TItem>>
+{
+}
 
 /**
  * Minimal stack that uses a pool to avoid pointers. It has some peculiar
@@ -128,76 +153,87 @@ struct SmallStackItem {
  *    the sense that the mutex stays locked until the pool has reacquired a
  *    consistent state. This means that even though a common data structure is
  *    used the SmallStack is still reentrant.
- * @tparam Titem Value type to be used.
- * @tparam Tindex Index type to use for the pool.
+ * @tparam TItem Value type to be used.
+ * @tparam uint Index type to use for the pool.
  * @tparam Tinvalid Invalid item to keep at the bottom of each stack.
  * @tparam Tgrowth_step Growth step for pool.
- * @tparam Tmax_size Maximum size for pool.
+ * @tparam max_size Maximum size for pool.
  */
-template <typename Titem, typename Tindex, Titem Tinvalid, Tindex Tgrowth_step, Tindex Tmax_size>
-class SmallStack : public SmallStackItem<Titem, Tindex> {
-public:
+//template <typename TItem, typename uint, TItem Tinvalid, uint Tgrowth_step, uint max_size>
+public class SmallStack<TItem> {
 
-	typedef SmallStackItem<Titem, Tindex> Item;
+    public TItem value;
+    public bool valid;
+    private uint maxSize;
 
-	/**
-	 * SmallStack item that can be kept in a pool.
-	 */
-	struct PooledSmallStack : public Item {
-		Tindex branch_count; ///< Number of branches in the tree structure this item is parent of
-	};
-
-	typedef SimplePool<PooledSmallStack, Tindex, Tgrowth_step, Tmax_size> SmallStackPool;
-
-	/**
+    /**
 	 * Constructor for a stack with one or two items in it.
 	 * @param value Initial item. If not missing or Tinvalid there will be Tinvalid below it.
 	 */
-	inline SmallStack(const Titem &value = Tinvalid) : Item(value, Tmax_size) {}
 
-	/**
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SmallStack(TItem value, uint maxSize) //maxsize var ikke med
+    {
+        this.value = value;
+        this.maxSize = maxSize;
+
+    }
+
+    /**
 	 * Remove the head of stack and all other items members that are unique to it.
 	 */
-	inline ~SmallStack()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    ~SmallStack()
 	{
 		/* Pop() locks the mutex and after each pop the pool is consistent.*/
-		while (this->next != Tmax_size) this->Pop();
+	    while (next != maxSize)
+	    {
+	        Pop();
+	    }
 	}
 
-	/**
+    /**
 	 * Shallow copy the stack, marking the first item as branched.
 	 * @param other Stack to copy from
 	 */
-	inline SmallStack(const SmallStack &other) : Item(other) { this->Branch(); }
 
-	/**
-	 * Shallow copy the stack, marking the first item as branched.
-	 * @param other Stack to copy from
-	 * @return This smallstack.
-	 */
-	inline SmallStack &operator=(const SmallStack &other)
-	{
-		if (this == &other) return *this;
-		while (this->next != Tmax_size) this->Pop();
-		this->next = other.next;
-		this->value = other.value;
-		/* Deleting and branching are independent operations, so it's fine to
-		 * acquire separate locks for them. */
-		this->Branch();
-		return *this;
-	}
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SmallStack(SmallStack other)
+    {
+        this.value = other.value;
+        Branch();
+    }
 
-	/**
+    //   /**
+    // * Shallow copy the stack, marking the first item as branched.
+    // * @param other Stack to copy from
+    // * @return This smallstack.
+    // */
+    //   [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    //   SmallStack operator=(const SmallStack &other)
+    //{
+    //	if (this == &other) return *this;
+    //	while (this->next != max_size) this->Pop();
+    //	this->next = other.next;
+    //	this->value = other.value;
+    //	/* Deleting and branching are independent operations, so it's fine to
+    //	 * acquire separate locks for them. */
+    //	this->Branch();
+    //	return *this;
+    //}
+
+    /**
 	 * Pushes a new item onto the stack if there is still space in the
 	 * underlying pool. Otherwise the topmost item's value gets overwritten.
 	 * @param item Item to be pushed.
 	 */
-	inline void Push(const Titem &item)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Push(TItem item)
 	{
-		if (this->value != Tinvalid) {
+		if (value != Tinvalid) {
 			ThreadMutexLocker lock(_pool.GetMutex());
-			Tindex new_item = _pool.Create();
-			if (new_item != Tmax_size) {
+			uint new_item = _pool.Create();
+			if (new_item != max_size) {
 				PooledSmallStack &pushed = _pool.Get(new_item);
 				pushed.value = this->value;
 				pushed.next = this->next;
@@ -212,10 +248,10 @@ public:
 	 * Pop an item from the stack.
 	 * @return Current top of stack.
 	 */
-	inline Titem Pop()
+	inline TItem Pop()
 	{
-		Titem ret = this->value;
-		if (this->next == Tmax_size) {
+		TItem ret = this->value;
+		if (this->next == max_size) {
 			this->value = Tinvalid;
 		} else {
 			ThreadMutexLocker lock(_pool.GetMutex());
@@ -226,7 +262,7 @@ public:
 			} else {
 				--popped.branch_count;
 				/* We can't use Branch() here as we already have the mutex.*/
-				if (popped.next != Tmax_size) {
+				if (popped.next != max_size) {
 					++(_pool.Get(popped.next).branch_count);
 				}
 			}
@@ -245,7 +281,7 @@ public:
 	 */
 	inline bool IsEmpty() const
 	{
-		return this->value == Tinvalid && this->next == Tmax_size;
+		return this->value == Tinvalid && this->next == max_size;
 	}
 
 	/**
@@ -253,17 +289,17 @@ public:
 	 * @param item Item to look for.
 	 * @return If the item is in the stack.
 	 */
-	inline bool Contains(const Titem &item) const
+	inline bool Contains(const TItem &item) const
 	{
 		if (item == Tinvalid || item == this->value) return true;
-		if (this->next != Tmax_size) {
+		if (this->next != max_size) {
 			ThreadMutexLocker lock(_pool.GetMutex());
 			const SmallStack *in_list = this;
 			do {
 				in_list = static_cast<const SmallStack *>(
 						static_cast<const Item *>(&_pool.Get(in_list->next)));
 				if (in_list->value == item) return true;
-			} while (in_list->next != Tmax_size);
+			} while (in_list->next != max_size);
 		}
 		return false;
 	}
@@ -276,7 +312,7 @@ protected:
 	 */
 	inline void Branch()
 	{
-		if (this->next != Tmax_size) {
+		if (this->next != max_size) {
 			ThreadMutexLocker lock(_pool.GetMutex());
 			++(_pool.Get(this->next).branch_count);
 		}
