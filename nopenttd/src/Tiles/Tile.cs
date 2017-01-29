@@ -21,25 +21,25 @@ namespace Nopenttd.Tiles
     public struct Tile
     {
         /// The type (bits 4..7), bridges (2..3), rainforest/desert (0..1)
-        byte type;
+        public byte type;
 
         /// The height of the northern corner.  
-        byte height;
+        public byte height;
 
         /// Primarily used for indices to towns, industries and stations  
-        ushort m2;
+        public ushort m2;
 
         /// Primarily used for ownership information  
-        byte m1;
+        public byte m1;
 
         /// General purpose  
-        byte m3;
+        public byte m3;
 
         /// General purpose  
-        byte m4;
+        public byte m4;
 
         /// General purpose  
-        byte m5;
+        public byte m5;
 
         //assert_compile(sizeof(Tile) == 8);
     }

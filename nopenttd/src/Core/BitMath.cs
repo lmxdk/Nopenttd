@@ -67,6 +67,12 @@ namespace Nopenttd.Core
 	x |= (uint)(d << s);
 	return x;
 }
+        public static byte SB(ref byte x, byte s, byte n, uint d)
+        {
+            x &= (byte)(~((((byte)1U << n) - 1) << s));
+            x |= (byte)(d << s);
+            return x;
+        }
 
         /**
          * Add \a i to \a n bits of \a x starting at bit \a s.

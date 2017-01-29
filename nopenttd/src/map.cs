@@ -26,28 +26,28 @@ namespace Nopenttd
         private static readonly ILogger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType.FullName);
 
         /// 2^_map_log_x == _map_size_x
-        private uint _map_log_x;
+        private static uint _map_log_x;
 
         /// 2^_map_log_y == _map_size_y
-        private uint _map_log_y;
+        private static uint _map_log_y;
 
         /// Size of the map along the X
-        private uint _map_size_x;
+        private static uint _map_size_x;
 
         /// Size of the map along the Y
-        private uint _map_size_y;
+        private static uint _map_size_y;
 
         /// The number of tiles on the map
-        private uint _map_size;
+        private static uint _map_size;
 
         /// _map_size - 1 (to mask the mapsize)
-        private uint _map_tile_mask;
+        private static uint _map_tile_mask;
 
         /// Tiles of the map
-        private Tile[] _m = null;
+        public static Tile[] _m = null;
 
         /// Extended Tiles of the map 
-        private TileExtended[] _me = null;
+        public static TileExtended[] _me = null;
 
 
 
@@ -57,7 +57,7 @@ namespace Nopenttd
          * this by masking the 'high' bits of.
          * @param x the tile to 'wrap'
          */
-        public uint TILE_MASK(uint x) => x & _map_tile_mask;
+        public static uint TILE_MASK(uint x) => x & _map_tile_mask;
 
         /**
          * Logarithm of the map size along the X side.
@@ -65,7 +65,7 @@ namespace Nopenttd
          * @return 2^"return value" == MapSizeX()
          */
         //inline
-        public uint MapLogX() => _map_log_x;
+        public static uint MapLogX() => _map_log_x;
 
         /**
          * Logarithm of the map size along the y side.
@@ -73,14 +73,14 @@ namespace Nopenttd
          * @return 2^"return value" == MapSizeY()
          */
         //inline
-        public uint MapLogY() => _map_log_y;
+        public static uint MapLogY() => _map_log_y;
 
         /**
          * Get the size of the map along the X
          * @return the number of tiles along the X of the map
          */
         //inline 
-        public uint MapSizeX() => _map_size_x;
+        public static uint MapSizeX() => _map_size_x;
 
 
         /**
@@ -88,28 +88,28 @@ namespace Nopenttd
          * @return the number of tiles along the Y of the map
          */
         //inline 
-        public uint MapSizeY() => _map_size_y;
+        public static uint MapSizeY() => _map_size_y;
 
         /**
          * Get the size of the map
          * @return the number of tiles of the map
          */
         //inline
-        public uint MapSize() => _map_size;
+        public static uint MapSize() => _map_size;
 
         /**
          * Gets the maximum X coordinate within the map, including MP_VOID
          * @return the maximum X coordinate
          */
         //inline
-        public uint MapMaxX() => MapSizeX() - 1;
+        public static uint MapMaxX() => MapSizeX() - 1;
 
         /**
          * Gets the maximum Y coordinate within the map, including MP_VOID
          * @return the maximum Y coordinate
          */
         //inline
-        public uint MapMaxY() => MapSizeY() - 1;
+        public static uint MapMaxY() => MapSizeY() - 1;
 
 
         /**
@@ -118,7 +118,7 @@ namespace Nopenttd
          * @param size_y the 'height' of the map along the SE/NW edge
          */
 
-        public void AllocateMap(uint size_x, uint size_y)
+        public static void AllocateMap(uint size_x, uint size_y)
         {
             /* Make sure that the map size is within the limits and that
              * size of both axes is a power of 2. */
@@ -190,7 +190,7 @@ namespace Nopenttd
  * @return translated tile, or INVALID_TILE when it would've wrapped.
  */
 
-        public TileIndex TileAddWrap(TileIndex tile, int addx, int addy)
+        public static TileIndex TileAddWrap(TileIndex tile, int addx, int addy)
         {
             uint x = (uint) (TileX(tile) + addx);
             uint y = (uint) (TileY(tile) + addy);
@@ -238,7 +238,7 @@ namespace Nopenttd
  * @return the distance
  */
 
-        public uint DistanceManhattan(TileIndex t0, TileIndex t1)
+        public static uint DistanceManhattan(TileIndex t0, TileIndex t1)
         {
             var dx = (uint) MathFuncs.Delta(TileX(t0), TileX(t1));
             var dy = (uint) MathFuncs.Delta(TileY(t0), TileY(t1));
@@ -256,7 +256,7 @@ namespace Nopenttd
  * @return the distance
  */
 
-        public uint DistanceSquare(TileIndex t0, TileIndex t1)
+        public static uint DistanceSquare(TileIndex t0, TileIndex t1)
         {
             int dx = (int) (TileX(t0) - TileX(t1));
             int dy = (int) (TileY(t0) - TileY(t1));
@@ -272,7 +272,7 @@ namespace Nopenttd
  * @return the distance
  */
 
-        public uint DistanceMax(TileIndex t0, TileIndex t1)
+        public static uint DistanceMax(TileIndex t0, TileIndex t1)
         {
             uint dx = MathFuncs.Delta(TileX(t0), TileX(t1));
             uint dy = MathFuncs.Delta(TileY(t0), TileY(t1));
@@ -289,7 +289,7 @@ namespace Nopenttd
  * @return the distance
  */
 
-        public uint DistanceMaxPlusManhattan(TileIndex t0, TileIndex t1)
+        public static uint DistanceMaxPlusManhattan(TileIndex t0, TileIndex t1)
         {
             uint dx = (uint) MathFuncs.Delta(TileX(t0), TileX(t1));
             uint dy = (uint) MathFuncs.Delta(TileY(t0), TileY(t1));
@@ -302,7 +302,7 @@ namespace Nopenttd
  * @return the distance from the edge in tiles
  */
 
-        public uint DistanceFromEdge(TileIndex tile)
+        public static uint DistanceFromEdge(TileIndex tile)
         {
             uint xl = TileX(tile);
             uint yl = TileY(tile);
@@ -320,7 +320,7 @@ namespace Nopenttd
  * @return the distance from the edge in tiles
  */
 
-        public uint DistanceFromEdgeDir(TileIndex tile, DiagDirection dir)
+        public static uint DistanceFromEdgeDir(TileIndex tile, DiagDirection dir)
         {
             switch (dir)
             {
@@ -362,7 +362,7 @@ namespace Nopenttd
  * @pre size > 0
  */
 
-        public bool CircularTileSearch<T>(ref TileIndex tile, uint size, TestTileOnSearchProc<T> proc, T userData)
+        public static bool CircularTileSearch<T>(ref TileIndex tile, uint size, TestTileOnSearchProc<T> proc, T userData)
         {
             if (proc == null) throw new ArgumentNullException(nameof(proc));
             if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size), "Must be greater than zero");
@@ -404,7 +404,7 @@ namespace Nopenttd
  * @pre radius > 0
  */
 
-        public bool CircularTileSearch<T>(ref TileIndex tile, uint radius, uint w, uint h, TestTileOnSearchProc<T> proc,
+        public static bool CircularTileSearch<T>(ref TileIndex tile, uint radius, uint w, uint h, TestTileOnSearchProc<T> proc,
             T userData)
         {
             if (proc == null) throw new ArgumentNullException(nameof(proc));
@@ -533,7 +533,7 @@ namespace Nopenttd
  * @return the scaled size
  */
 //inline
-        public uint ScaleByMapSize(uint n)
+        public static uint ScaleByMapSize(uint n)
         {
             /* Subtract 12 from shift in order to prevent integer overflow
              * for large values of n. It's safe since the min mapsize is 64x64. */
@@ -548,7 +548,7 @@ namespace Nopenttd
  * @return the scaled size
  */
 //inline
-        public uint ScaleByMapSize1D(uint n)
+        public static uint ScaleByMapSize1D(uint n)
         {
             /* Normal circumference for the X+Y is 256+256 = 1<<9
              * Note, not actually taking the full circumference into account,
@@ -566,7 +566,7 @@ namespace Nopenttd
  * @return The TileIndex calculated by the coordinate
  */
 //inline
-        public TileIndex TileXY(uint x, uint y)
+        public static TileIndex TileXY(uint x, uint y)
         {
             return (y << (int) MapLogX()) + x;
         }
@@ -583,7 +583,7 @@ namespace Nopenttd
  * @see ToTileIndexDiff(TileIndexDiffC)
  */
 //inline
-        public TileIndexDiff TileDiffXY(int x, int y)
+        public static TileIndexDiff TileDiffXY(int x, int y)
         {
             /* Multiplication gives much better optimization on MSVC than shifting.
              * 0 << shift isn't optimized to 0 properly.
@@ -599,7 +599,7 @@ namespace Nopenttd
  * @return The TileIndex calculated by the coordinate.
  */
 //inline
-        public TileIndex TileVirtXY(uint x, uint y)
+        public static TileIndex TileVirtXY(uint x, uint y)
         {
             return (y >> 4 << (int) MapLogX()) + (x >> 4);
         }
@@ -611,7 +611,7 @@ namespace Nopenttd
  * @return the X component
  */
 //inline
-        public uint TileX(TileIndex tile)
+        public static uint TileX(TileIndex tile)
         {
             return tile & MapMaxX();
         }
@@ -622,7 +622,7 @@ namespace Nopenttd
  * @return the Y component
  */
 //inline
-        public uint TileY(TileIndex tile)
+        public static uint TileY(TileIndex tile)
         {
             return tile >> (int) MapLogX();
         }
@@ -638,7 +638,7 @@ namespace Nopenttd
  * @see TileDiffXY(int, int)
  */
 //inline
-        public TileIndexDiff ToTileIndexDiff(TileIndexDiffC tidc)
+        public static TileIndexDiff ToTileIndexDiff(TileIndexDiffC tidc)
         {
             return (tidc.y << (int) MapLogX()) + tidc.x;
         }
@@ -650,7 +650,7 @@ namespace Nopenttd
          * @param y Another tile to add
          * @return The resulting tile(index)
          */
-        public TileIndex TILE_ADD(uint x, uint y) => x + y;
+        public static TileIndex TILE_ADD(uint x, uint y) => x + y;
 
         /**
          * Adds a given offset to a tile.
@@ -660,7 +660,7 @@ namespace Nopenttd
          * @param y The y offset to add to the tile
          */
 
-        public TileIndex TILE_ADDXY(uint tile, int x, int y)
+        public static TileIndex TILE_ADDXY(uint tile, int x, int y)
         {
             return (TileIndex) (tile + TileDiffXY(x, y));
         }
@@ -702,7 +702,7 @@ namespace Nopenttd
  * @return The resulting TileIndex
  */
 //inline
-        public TileIndex AddTileIndexDiffCWrap(TileIndex tile, TileIndexDiffC diff)
+        public static TileIndex AddTileIndexDiffCWrap(TileIndex tile, TileIndexDiffC diff)
         {
             var x = (uint) (TileX(tile) + diff.x);
             var y = (uint) (TileY(tile) + diff.y);
@@ -722,7 +722,7 @@ namespace Nopenttd
  * @return the difference between tila_a and tile_b
  */
 //inline
-        public TileIndexDiffC TileIndexToTileIndexDiffC(TileIndex tile_a, TileIndex tile_b)
+        public static TileIndexDiffC TileIndexToTileIndexDiffC(TileIndex tile_a, TileIndex tile_b)
         {
             TileIndexDiffC difference;
 
@@ -740,7 +740,7 @@ namespace Nopenttd
  * @see TileIndexDiffCByDiagDir
  */
 //inline
-        public TileIndexDiff TileOffsByDiagDir(DiagDirection dir)
+        public static TileIndexDiff TileOffsByDiagDir(DiagDirection dir)
         {
             if (dir.IsValidDiagDirection() == false) throw new ArgumentOutOfRangeException(nameof(dir));
             return ToTileIndexDiff(_tileoffs_by_diagdir[(int) dir]);
@@ -753,7 +753,7 @@ namespace Nopenttd
  * @return The resulting TileIndexDiff
  */
 //inline
-        public TileIndexDiff TileOffsByDir(Direction dir)
+        public static TileIndexDiff TileOffsByDir(Direction dir)
         {
             if (dir.IsValidDirection() == false) throw new ArgumentOutOfRangeException(nameof(dir));
             return ToTileIndexDiff(_tileoffs_by_dir[(int) dir]);
@@ -780,7 +780,7 @@ namespace Nopenttd
  * @return DiagDirection from tile_from towards tile_to, or INVALID_DIAGDIR if the tiles are not on an axis
  */
 //inline
-        public DiagDirection DiagdirBetweenTiles(TileIndex tile_from, TileIndex tile_to)
+        public static DiagDirection DiagdirBetweenTiles(TileIndex tile_from, TileIndex tile_to)
         {
             int dx = (int) TileX(tile_to) - (int) TileX(tile_from);
             int dy = (int) TileY(tile_to) - (int) TileY(tile_from);
@@ -810,7 +810,7 @@ namespace Nopenttd
  * @return a valid tile
  */
 //inline
-        public TileIndex RandomTileSeed(uint r) => TILE_MASK(r);
+        public static TileIndex RandomTileSeed(uint r) => TILE_MASK(r);
 
 /**
  * Get a valid random tile.
@@ -818,6 +818,6 @@ namespace Nopenttd
  *       called, thus making the random traces more explicit.
  * @return a valid tile
  */
-        public TileIndex RandomTile() => RandomTileSeed(Randomizer.Random());
+        public static TileIndex RandomTile() => RandomTileSeed(Randomizer.Random());
     }
 }

@@ -5,7 +5,7 @@ namespace Nopenttd.Tiles
          * Look at docs/landscape.html for the exact meaning of the members.
          */
     public struct TileExtended {
-        byte m6; /// General purpose
-        byte m7; /// Primarily used for newgrf support
+        public byte m6; /// General purpose
+        public byte m7; /// Primarily used for newgrf support
     }
 }

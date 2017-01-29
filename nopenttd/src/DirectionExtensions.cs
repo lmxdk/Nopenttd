@@ -283,7 +283,7 @@ namespace Nopenttd
          * @return the desired DiagDirection
          */
         //inline
-        static DiagDirection XYNSToDiagDir(this Axis xy, uint ns)
+        public static DiagDirection XYNSToDiagDir(this Axis xy, uint ns)
         {
             if (xy.IsValidAxis() == false) throw new ArgumentOutOfRangeException(nameof(xy));
             return (DiagDirection) ((int) xy * 3 ^ (int) ns * 2);
