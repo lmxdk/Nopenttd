@@ -134,14 +134,14 @@ namespace Nopenttd
         //inline
         public static WaterTileType GetWaterTileType(TileIndex t)
         {
-            if (IsTileType(t, TileType.MP_WATER) == false)
+            if (TileMap.IsTileType(t, TileType.MP_WATER) == false)
                 throw new ArgumentException(nameof(t), "Supplied tile must be of type MP_WATER");
 
-            switch (
-                BitMath.GB(Map._m[t].m5, WaterTileTypeBitLayout.WBL_TYPE_BEGIN, WaterTileTypeBitLayout.WBL_TYPE_COUNT))
+
+            switch ((WaterTileTypeBitLayout)BitMath.GB(Map._m[t].m5, (byte)WaterTileTypeBitLayout.WBL_TYPE_BEGIN, (byte)WaterTileTypeBitLayout.WBL_TYPE_COUNT))
             {
                 case WaterTileTypeBitLayout.WBL_TYPE_NORMAL:
-                    return BitMath.HasBit(Map._m[t].m5, WaterTileTypeBitLayout.WBL_COAST_FLAG)
+                    return BitMath.HasBit(Map._m[t].m5, (byte)WaterTileTypeBitLayout.WBL_COAST_FLAG)
                         ? WaterTileType.WATER_TILE_COAST
                         : WaterTileType.WATER_TILE_CLEAR;
                 case WaterTileTypeBitLayout.WBL_TYPE_LOCK:
@@ -162,8 +162,8 @@ namespace Nopenttd
         //inline
         public static bool HasTileWaterClass(TileIndex t)
         {
-            return IsTileType(t, TileType.MP_WATER) || IsTileType(t, TileType.MP_STATION) ||
-                   IsTileType(t, TileType.MP_INDUSTRY) || IsTileType(t, TileType.MP_OBJECT);
+            return TileMap.IsTileType(t, TileType.MP_WATER) || TileMap.IsTileType(t, TileType.MP_STATION) ||
+                   TileMap.IsTileType(t, TileType.MP_INDUSTRY) || TileMap.IsTileType(t, TileType.MP_OBJECT);
         }
 
         /**
@@ -175,7 +175,7 @@ namespace Nopenttd
         //inline
         public static WaterClass GetWaterClass(TileIndex t)
         {
-            assert(HasTileWaterClass(t));
+            if (HasTileWaterClass(t) == false) throw new ArgumentException(nameof(t));
             return (WaterClass) BitMath.GB(Map._m[t].m1, 5, 2);
         }
 
@@ -188,8 +188,8 @@ namespace Nopenttd
         //inline
         public static void SetWaterClass(TileIndex t, WaterClass wc)
         {
-            assert(HasTileWaterClass(t));
-            BitMath.SB(ref Map._m[t].m1, 5, 2, wc);
+            if (HasTileWaterClass(t) == false) throw new ArgumentException(nameof(t));
+            BitMath.SB(ref Map._m[t].m1, 5, 2, (uint)wc);
         }
 
         /**
@@ -263,7 +263,7 @@ namespace Nopenttd
 
         public static bool IsWaterTile(TileIndex t)
         {
-            return IsTileType(t, TileType.MP_WATER) && IsWater(t);
+            return TileMap.IsTileType(t, TileType.MP_WATER) && IsWater(t);
         }
 
 /**
@@ -288,7 +288,7 @@ namespace Nopenttd
 
         public static bool IsCoastTile(TileIndex t)
         {
-            return IsTileType(t, TileType.MP_WATER) && IsCoast(t);
+            return TileMap.IsTileType(t, TileType.MP_WATER) && IsCoast(t);
         }
 
 /**
@@ -313,7 +313,7 @@ namespace Nopenttd
 
         public static bool IsShipDepotTile(TileIndex t)
         {
-            return IsTileType(t, TileType.MP_WATER) && IsShipDepot(t);
+            return TileMap.IsTileType(t, TileType.MP_WATER) && IsShipDepot(t);
         }
 
 /**
@@ -326,7 +326,7 @@ namespace Nopenttd
 
         public static Axis GetShipDepotAxis(TileIndex t)
         {
-            assert(IsShipDepotTile(t));
+            if (IsShipDepotTile(t) == false) throw new ArgumentException(nameof(t));
             return (Axis) BitMath.GB(Map._m[t].m5, (byte) WaterTileTypeBitLayout.WBL_DEPOT_AXIS, 1);
         }
 
@@ -340,7 +340,7 @@ namespace Nopenttd
 
         public static DepotPart GetShipDepotPart(TileIndex t)
         {
-            assert(IsShipDepotTile(t));
+            if (IsShipDepotTile(t) == false) throw new ArgumentException(nameof(t));
             return (DepotPart) BitMath.GB(Map._m[t].m5, (byte) WaterTileTypeBitLayout.WBL_DEPOT_PART, 1);
         }
 
@@ -384,7 +384,7 @@ namespace Nopenttd
 
         public static TileIndex GetShipDepotNorthTile(TileIndex t)
         {
-            assert(IsShipDepot(t));
+            if (IsShipDepotTile(t) == false) throw new ArgumentException(nameof(t));
             TileIndex tile2 = GetOtherShipDepotTile(t);
 
             return t < tile2 ? t : tile2;
@@ -413,7 +413,7 @@ namespace Nopenttd
 
         public static DiagDirection GetLockDirection(TileIndex t)
         {
-            assert(IsLock(t));
+            if (IsLock(t) == false) throw new ArgumentException(nameof(t));
             return
                 (DiagDirection)
                 BitMath.GB(Map._m[t].m5, (byte) WaterTileTypeBitLayout.WBL_LOCK_ORIENT_BEGIN,
@@ -430,7 +430,7 @@ namespace Nopenttd
 
         public static byte GetLockPart(TileIndex t)
         {
-            assert(IsLock(t));
+            if (IsLock(t) == false) throw new ArgumentException(nameof(t));
             return
                 (byte)
                 BitMath.GB(Map._m[t].m5, (byte) WaterTileTypeBitLayout.WBL_LOCK_PART_BEGIN,
@@ -447,7 +447,7 @@ namespace Nopenttd
 
         public static byte GetWaterTileRandomBits(TileIndex t)
         {
-            assert(IsTileType(t, TileType.MP_WATER));
+            if (TileMap.IsTileType(t, TileType.MP_WATER) == false) throw new ArgumentException(nameof(t));
             return Map._m[t].m4;
         }
 
@@ -473,8 +473,8 @@ namespace Nopenttd
 
         public static void MakeShore(TileIndex t)
         {
-            SetTileType(t, TileType.MP_WATER);
-            SetTileOwner(t, OWNER_WATER);
+            TileMap.SetTileType(t, TileType.MP_WATER);
+            TileMap.SetTileOwner(t, Owner.OWNER_WATER);
             SetWaterClass(t, WaterClass.WATER_CLASS_SEA);
             Map._m[t].m2 = 0;
             Map._m[t].m3 = 0;
@@ -495,8 +495,8 @@ namespace Nopenttd
 
         public static void MakeWater(TileIndex t, Owner o, WaterClass wc, byte random_bits)
         {
-            SetTileType(t, TileType.MP_WATER);
-            SetTileOwner(t, o);
+            TileMap.SetTileType(t, TileType.MP_WATER);
+            TileMap.SetTileOwner(t, o);
             SetWaterClass(t, wc);
             Map._m[t].m2 = 0;
             Map._m[t].m3 = 0;
@@ -514,7 +514,7 @@ namespace Nopenttd
 
         public static void MakeSea(TileIndex t)
         {
-            MakeWater(t, OWNER_WATER, WaterClass.WATER_CLASS_SEA, 0);
+            MakeWater(t, Owner.OWNER_WATER, WaterClass.WATER_CLASS_SEA, 0);
         }
 
 /**
@@ -526,7 +526,7 @@ namespace Nopenttd
 
         public static void MakeRiver(TileIndex t, byte random_bits)
         {
-            MakeWater(t, OWNER_WATER, WaterClass.WATER_CLASS_RIVER, random_bits);
+            MakeWater(t, Owner.OWNER_WATER, WaterClass.WATER_CLASS_RIVER, random_bits);
         }
 
 /**
@@ -539,7 +539,7 @@ namespace Nopenttd
 
         public static void MakeCanal(TileIndex t, Owner o, byte random_bits)
         {
-            assert(o != OWNER_WATER);
+            if (o == Owner.OWNER_WATER) throw new ArgumentException(nameof(o));
             MakeWater(t, o, WaterClass.WATER_CLASS_CANAL, random_bits);
         }
 
@@ -557,8 +557,8 @@ namespace Nopenttd
         public static void MakeShipDepot(TileIndex t, Owner o, DepotID did, DepotPart part, Axis a,
             WaterClass original_water_class)
         {
-            SetTileType(t, TileType.MP_WATER);
-            SetTileOwner(t, o);
+            TileMap.SetTileType(t, TileType.MP_WATER);
+            TileMap.SetTileOwner(t, o);
             SetWaterClass(t, original_water_class);
             Map._m[t].m2 = did;
             Map._m[t].m3 = 0;
@@ -586,8 +586,8 @@ namespace Nopenttd
         public static void MakeLockTile(TileIndex t, Owner o, LockPart part, DiagDirection dir,
             WaterClass original_water_class)
         {
-            SetTileType(t, TileType.MP_WATER);
-            SetTileOwner(t, o);
+            TileMap.SetTileType(t, TileType.MP_WATER);
+            TileMap.SetTileOwner(t, o);
             SetWaterClass(t, original_water_class);
             Map._m[t].m2 = 0;
             Map._m[t].m3 = 0;
@@ -620,10 +620,8 @@ namespace Nopenttd
             /* Keep the current waterclass and owner for the tiles.
              * It allows to restore them after the lock is deleted */
             MakeLockTile(t, o, LockPart.LOCK_PART_MIDDLE, d, wc_middle);
-            MakeLockTile(t - delta, IsWaterTile(t - delta) ? GetTileOwner(t - delta) : o, LockPart.LOCK_PART_LOWER, d,
-                wc_lower);
-            MakeLockTile(t + delta, IsWaterTile(t + delta) ? GetTileOwner(t + delta) : o, LockPart.LOCK_PART_UPPER, d,
-                wc_upper);
+            MakeLockTile((uint)(t - delta), IsWaterTile((uint)(t - delta)) ? TileMap.GetTileOwner((uint)(t - delta)) : o, LockPart.LOCK_PART_LOWER, d,wc_lower);
+            MakeLockTile((uint)(t + delta), IsWaterTile((uint)(t + delta)) ? TileMap.GetTileOwner((uint)(t + delta)) : o, LockPart.LOCK_PART_UPPER, d,wc_upper);
         }
 
     }

@@ -460,7 +460,7 @@ namespace Nopenttd
 
         uint GetClosestWaterDistance(TileIndex tile, bool water)
         {
-            if (HasTileWaterGround(tile) == water) return 0;
+            if (WaterMap.HasTileWaterGround(tile) == water) return 0;
 
             uint max_dist = (uint) (water ? 0x7F : 0x200);
 
@@ -490,8 +490,8 @@ namespace Nopenttd
                         /* MP_VOID tiles are not checked (interval is [min; max) for IsInsideMM())*/
                         if (MathFuncs.IsInsideMM(x, min_xy, max_x) && MathFuncs.IsInsideMM(y, min_xy, max_y))
                         {
-                            TileIndex t = TileXY(x, y);
-                            if (HasTileWaterGround(t) == water) return dist;
+                            TileIndex t = TileXY((uint)x, (uint)y);
+                            if (WaterMap.HasTileWaterGround(t) == water) return dist;
                         }
                         x += dx;
                         y += dy;
@@ -504,7 +504,7 @@ namespace Nopenttd
                 /* no land found - is this a water-only map? */
                 for (TileIndex t = 0; t < MapSize(); t++)
                 {
-                    if (!IsTileType(t, MP_VOID) && !IsTileType(t, MP_WATER)) return 0x1FF;
+                    if (!TileMap.IsTileType(t, TileType.MP_VOID) && !TileMap.IsTileType(t, TileType.MP_WATER)) return 0x1FF;
                 }
             }
 
@@ -769,7 +769,7 @@ namespace Nopenttd
 //inline
         public static TileIndex TileAddByDiagDir(TileIndex tile, DiagDirection dir)
         {
-            return TILE_ADD(tile, TileOffsByDiagDir(dir));
+            return TILE_ADD(tile, (uint)TileOffsByDiagDir(dir).Difference);
         }
 
 /**

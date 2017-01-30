@@ -223,7 +223,7 @@ namespace Nopenttd
             if (IsTileType(tile, TileType.MP_HOUSE)) throw new ArgumentException(nameof(tile));
             if (IsTileType(tile, TileType.MP_INDUSTRY)) throw new ArgumentException(nameof(tile));
 
-            BitMath.SB(ref Map._m[tile].m1, 0, 5, owner);
+            BitMath.SB(ref Map._m[tile].m1, 0, 5, (uint)owner);
         }
 
 /**
