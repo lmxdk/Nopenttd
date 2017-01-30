@@ -479,8 +479,7 @@ namespace Nopenttd
             Map._m[t].m2 = 0;
             Map._m[t].m3 = 0;
             Map._m[t].m4 = 0;
-            Map._m[t].m5 = ((int) WaterTileTypeBitLayout.WBL_TYPE_NORMAL << (int) WaterTileTypeBitLayout.WBL_TYPE_BEGIN |
-                            1 << (int) WaterTileTypeBitLayout.WBL_COAST_FLAG;
+            Map._m[t].m5 = ((int) WaterTileTypeBitLayout.WBL_TYPE_NORMAL << (int) WaterTileTypeBitLayout.WBL_TYPE_BEGIN | 1 << (int) WaterTileTypeBitLayout.WBL_COAST_FLAG);
             BitMath.SB(ref Map._me[t].m6, 2, 4, 0);
             Map._me[t].m7 = 0;
         }
