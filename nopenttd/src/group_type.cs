@@ -34,21 +34,20 @@ namespace Nopenttd
 
     public class GroupConstants
     {
-
+        /// Sentinel for a to-be-created group.
         public static readonly GroupID NEW_GROUP = 0xFFFC;
 
-        /// Sentinel for a to-be-created group.
+        /// All vehicles are in this group.
         public static readonly GroupID ALL_GROUP = 0xFFFD;
 
-        /// All vehicles are in this group.
+        /// Ungrouped vehicles are in this group.
         public static readonly GroupID DEFAULT_GROUP = 0xFFFE;
 
-        /// Ungrouped vehicles are in this group.
+        /// Sentinel for invalid groups.
         public static readonly GroupID INVALID_GROUP = 0xFFFF;
 
-        /// Sentinel for invalid groups.
-
-        public static readonly uint MAX_LENGTH_GROUP_NAME_CHARS = 32; /// The maximum length of a group name in characters including '\0'
+        /// The maximum length of a group name in characters including '\0'
+        public static readonly uint MAX_LENGTH_GROUP_NAME_CHARS = 32; 
     }
 
     //struct Group;
