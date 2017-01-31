@@ -49,6 +49,4 @@ namespace Nopenttd
         /// The maximum length of a group name in characters including '\0'
         public static readonly uint MAX_LENGTH_GROUP_NAME_CHARS = 32; 
     }
-
-    //struct Group;
 }

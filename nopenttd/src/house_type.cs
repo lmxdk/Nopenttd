@@ -53,6 +53,4 @@ namespace Nopenttd
             return new HouseClassID(id);
         }
     }
-
-//struct HouseSpec;
 }

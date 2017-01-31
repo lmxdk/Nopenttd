@@ -71,11 +71,6 @@ namespace Nopenttd
         }
     }
 
-//struct Industry;
-
-//struct IndustrySpec;
-//struct IndustryTileSpec;
-
     public class IndustryConstants
     {
 
@@ -111,7 +106,4 @@ namespace Nopenttd
         /// final stage of industry construction.
         public static readonly int INDUSTRY_COMPLETED = 3;
     }
-
-    //void CheckIndustries();
-
 }
