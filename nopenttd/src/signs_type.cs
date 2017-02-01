@@ -15,21 +15,21 @@ namespace Nopenttd
 
     public struct SignID
     {
-        public ushort Label { get; set; }
+        public ushort Id { get; set; }
 
-        public SignID(ushort label)
+        public SignID(ushort id)
         {
-            Label = label;
+            Id = id;
         }
 
-        public static implicit operator ushort(SignID label)
+        public static implicit operator ushort(SignID id)
         {
-            return label.Label;
+            return id.Id;
         }
 
-        public static implicit operator SignID(ushort label)
+        public static implicit operator SignID(ushort id)
         {
-            return new SignID(label);
+            return new SignID(id);
         }
     }
 
