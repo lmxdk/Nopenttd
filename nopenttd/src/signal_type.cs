@@ -9,33 +9,50 @@
 
 /** @file signal_type.h Types and classes related to signals. */
 
-#ifndef SIGNAL_TYPE_H
-#define SIGNAL_TYPE_H
-
-#include "core/enum_type.hpp"
+namespace Nopenttd
+{
 
 /** Variant of the signal, i.e. how does the signal look? */
-enum SignalVariant {
-	SIG_ELECTRIC  = 0, ///< Light signal
-	SIG_SEMAPHORE = 1, ///< Old-fashioned semaphore signal
-};
+
+    public enum SignalVariant
+    {
+        /// Light signal
+        SIG_ELECTRIC = 0,
+
+        /// Old-fashioned semaphore signal
+        SIG_SEMAPHORE = 1,
+    }
 
 
 /** Type of signal, i.e. how does the signal behave? */
-enum SignalType {
-	SIGTYPE_NORMAL     = 0, ///< normal signal
-	SIGTYPE_ENTRY      = 1, ///< presignal block entry
-	SIGTYPE_EXIT       = 2, ///< presignal block exit
-	SIGTYPE_COMBO      = 3, ///< presignal inter-block
-	SIGTYPE_PBS        = 4, ///< normal pbs signal
-	SIGTYPE_PBS_ONEWAY = 5, ///< no-entry signal
 
-	SIGTYPE_END,
-	SIGTYPE_LAST       = SIGTYPE_PBS_ONEWAY,
-	SIGTYPE_LAST_NOPBS = SIGTYPE_COMBO,
-};
+    public enum SignalType
+    {
+        /// normal signal
+        SIGTYPE_NORMAL = 0,
+
+        /// presignal block entry 
+        SIGTYPE_ENTRY = 1,
+
+        /// presignal block exit 
+        SIGTYPE_EXIT = 2,
+
+        /// presignal inter-block 
+        SIGTYPE_COMBO = 3,
+
+        /// normal pbs signal 
+        SIGTYPE_PBS = 4,
+
+        /// no-entry signal 
+        SIGTYPE_PBS_ONEWAY = 5,
+
+        SIGTYPE_END,
+        SIGTYPE_LAST = SIGTYPE_PBS_ONEWAY,
+        SIGTYPE_LAST_NOPBS = SIGTYPE_COMBO,
+    }
+
 /** Helper information for extract tool. */
-template <> struct EnumPropsT<SignalType> : MakeEnumPropsT<SignalType, byte, SIGTYPE_NORMAL, SIGTYPE_END, SIGTYPE_END, 3> {};
+//template <> struct EnumPropsT<SignalType> : MakeEnumPropsT<SignalType, byte, SIGTYPE_NORMAL, SIGTYPE_END, SIGTYPE_END, 3> {};
 
 
 /**
@@ -43,9 +60,14 @@ template <> struct EnumPropsT<SignalType> : MakeEnumPropsT<SignalType, byte, SIG
  * simple boolean logic will do. But do try to compare to this enum instead of
  * normal boolean evaluation, since that will make future additions easier.
  */
-enum SignalState {
-	SIGNAL_STATE_RED   = 0, ///< The signal is red
-	SIGNAL_STATE_GREEN = 1, ///< The signal is green
-};
 
-#endif /* SIGNAL_TYPE_H */
+    public enum SignalState
+    {
+        /// The signal is red
+        SIGNAL_STATE_RED = 0,
+
+        /// The signal is green
+        SIGNAL_STATE_GREEN = 1,
+    }
+
+}
