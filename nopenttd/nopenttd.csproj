@@ -61,6 +61,7 @@
     <Compile Include="src\Slopes\Corner.cs" />
     <Compile Include="src\Slopes\Slope.cs" />
     <Compile Include="src\Slopes\SlopeConstants.cs" />
+    <Compile Include="src\story_type.cs" />
     <Compile Include="src\Tiles\LevelMode.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
     <Compile Include="src\Tiles\TileExtended.cs" />
