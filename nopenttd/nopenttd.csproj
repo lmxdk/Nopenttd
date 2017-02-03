@@ -184,6 +184,12 @@
     <Compile Include="src\window_type.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\vehicle_type.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\transport_type.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="src\zoom_type.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

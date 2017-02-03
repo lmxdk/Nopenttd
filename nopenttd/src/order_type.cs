@@ -93,7 +93,7 @@ namespace Nopenttd
         }
     }
 
-    public class VehicleConstants
+    public class OrderConstants
     {
 
 /** Invalid vehicle order index (sentinel) */
