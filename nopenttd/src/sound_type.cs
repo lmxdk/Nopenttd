@@ -38,7 +38,7 @@ namespace Nopenttd
  * That is, for sound effects 0x02 to 0x28 the naming is off-by-two.
  */
 
-    enum SoundFx
+    public enum SoundFx
     {
         SND_BEGIN = 0,
 

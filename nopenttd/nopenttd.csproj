@@ -56,6 +56,7 @@
     <Compile Include="src\Core\SavedRandomSeeds.cs" />
     <Compile Include="src\Core\SmallStackItem.cs" />
     <Compile Include="src\Core\StringList.cs" />
+    <Compile Include="src\news_type.cs" />
     <Compile Include="src\Settings\Settings.cs" />
     <Compile Include="src\SharedState.cs" />
     <Compile Include="src\Slopes\Corner.cs" />
