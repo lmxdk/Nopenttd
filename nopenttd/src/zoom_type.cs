@@ -9,15 +9,97 @@
 
 /** @file zoom_type.h Types related to zooming in and out. */
 
+using System;
+
 namespace Nopenttd
 {
-    public class ZoomConstants
+    public class Zoom
     {
         public const int ZOOM_LVL_SHIFT = 2;
         public const int ZOOM_LVL_BASE = 1 << ZOOM_LVL_SHIFT;
+
+        public static ZoomLevel _gui_zoom = ZoomLevel.ZOOM_LVL_NORMAL;
+
+
+        /**
+         * Scale by zoom level, usually shift left (when zoom > ZOOM_LVL_NORMAL)
+         * When shifting right, value is rounded up
+         * @param value value to shift
+         * @param zoom  zoom level to shift to
+         * @return shifted value
+         */
+        //inline
+        public static int ScaleByZoom(int value, ZoomLevel zoom)
+        {
+            if (zoom < 0) throw new ArgumentOutOfRangeException(nameof(zoom), "must be greater than zero");
+            return value << (int) zoom;
+        }
+
+        /**
+         * Scale by zoom level, usually shift right (when zoom > ZOOM_LVL_NORMAL)
+         * When shifting right, value is rounded up
+         * @param value value to shift
+         * @param zoom  zoom level to shift to
+         * @return shifted value
+         */
+        //inline
+        public static int UnScaleByZoom(int value, ZoomLevel zoom)
+        {
+            if (zoom < 0) throw new ArgumentOutOfRangeException(nameof(zoom), "must be greater than zero");
+            return (value + (1 << (int) zoom) - 1) >> (int) zoom;
+        }
+
+        /**
+         * Scale by zoom level, usually shift left (when zoom > ZOOM_LVL_NORMAL)
+         * @param value value to shift
+         * @param zoom  zoom level to shift to
+         * @return shifted value
+         */
+        //inline
+        public static int ScaleByZoomLower(int value, ZoomLevel zoom)
+        {
+            if (zoom < 0) throw new ArgumentOutOfRangeException(nameof(zoom), "must be greater than zero");
+            return value << (int) zoom;
+        }
+
+        /**
+         * Scale by zoom level, usually shift right (when zoom > ZOOM_LVL_NORMAL)
+         * @param value value to shift
+         * @param zoom  zoom level to shift to
+         * @return shifted value
+         */
+        //inline
+        public static int UnScaleByZoomLower(int value, ZoomLevel zoom)
+        {
+            if (zoom < 0) throw new ArgumentOutOfRangeException(nameof(zoom), "must be greater than zero");
+            return value >> (int) zoom;
+        }
+
+        /**
+         * Short-hand to apply GUI zoom level.
+         * @param value Pixel amount at #ZOOM_LVL_BEGIN (full zoom in).
+         * @return Pixel amount at #ZOOM_LVL_GUI (current interface size).
+         */
+        //inline
+        public static int UnScaleGUI(int value)
+        {
+            return UnScaleByZoom(value, _gui_zoom);
+        }
+
+        /**
+         * Scale traditional pixel dimensions to GUI zoom level.
+         * @param value Pixel amount at #ZOOM_LVL_BASE (traditional "normal" interface size).
+         * @return Pixel amount at #ZOOM_LVL_GUI (current interface size).
+         */
+        //inline
+        public static int ScaleGUITrad(int value)
+        {
+            return UnScaleGUI(value * ZOOM_LVL_BASE);
+        }
+
     }
 
-/** All zoom levels we know. */
+    /** All zoom levels we know. */
 
     public enum ZoomLevel
     {
