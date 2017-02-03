@@ -45,6 +45,16 @@ namespace Nopenttd
 
         /// Restore the text-direction state to before the last LRE, RLE, LRO or RLO.
         public const int CHAR_TD_PDF = 0x202C;
+
+
+        /// Constant representing an invalid string
+        public static readonly StringID INVALID_STRING_ID = 0xFFFF;
+
+        /// Max. length of UTF-8 encoded unicode character
+        public const int MAX_CHAR_LENGTH = 4;
+
+        /// Maximum number of languages supported by the game, and the NewGRF specs
+        public const uint MAX_LANG = 0x7F;
     }
 
 /**
