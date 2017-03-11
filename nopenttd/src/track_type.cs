@@ -18,7 +18,7 @@ using System;
 
 namespace Nopenttd
 {
-    enum Track
+    public enum Track
     {
         /// Used for iterations
         TRACK_BEGIN = 0,
@@ -57,7 +57,7 @@ namespace Nopenttd
 
 /** Bitfield corresponding to Track */
     [Flags]
-    enum TrackBits
+    public enum TrackBits
     {
         /// No track
         TRACK_BIT_NONE = 0,
@@ -117,19 +117,19 @@ namespace Nopenttd
         INVALID_TRACK_BIT = (int) 0xFF,
     }
 
-//typedef SimpleTinyEnumT<TrackBits, byte> TrackBitsByte;
+    //typedef SimpleTinyEnumT<TrackBits, byte> TrackBitsByte;
 
-/**
- * Enumeration for tracks and directions.
- *
- * These are a combination of tracks and directions. Values are 0-5 in one
- * direction (corresponding to the Track enum) and 8-13 in the other direction.
- * 6, 7, 14 and 15 are used to encode the reversing of road vehicles. Those
- * reversing track dirs are not considered to be 'valid' except in a small
- * corner in the road vehicle controller.
- */
+    /**
+     * Enumeration for tracks and directions.
+     *
+     * These are a combination of tracks and directions. Values are 0-5 in one
+     * direction (corresponding to the Track enum) and 8-13 in the other direction.
+     * 6, 7, 14 and 15 are used to encode the reversing of road vehicles. Those
+     * reversing track dirs are not considered to be 'valid' except in a small
+     * corner in the road vehicle controller.
+     */
 
-    enum Trackdir
+    public enum Trackdir
     {
         /// Used for iterations
         TRACKDIR_BEGIN = 0,
@@ -201,7 +201,7 @@ namespace Nopenttd
  */
 
     [Flags]
-    enum TrackdirBits
+    public enum TrackdirBits
     {
         /// No track build
         TRACKDIR_BIT_NONE = 0x0000,
