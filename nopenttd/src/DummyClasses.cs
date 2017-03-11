@@ -16,4 +16,15 @@ namespace Nopenttd.src
 
     public struct Window
     { }
+
+
+
+    public class Shared<TStruct> where TStruct : struct
+    {
+        public Shared(bool value)
+        {
+            Value = value;
+        }
+        public TStruct Value { get; set; }
+    }
 }
