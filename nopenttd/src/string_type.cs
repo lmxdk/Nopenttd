@@ -55,6 +55,8 @@ namespace Nopenttd
 
         /// Maximum number of languages supported by the game, and the NewGRF specs
         public const uint MAX_LANG = 0x7F;
+
+        public const ushort STR_NULL = 0;
     }
 
 /**

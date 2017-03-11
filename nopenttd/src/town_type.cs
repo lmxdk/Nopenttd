@@ -32,6 +32,7 @@ namespace Nopenttd
         }
     }
 
+
 /** Supported initial town sizes */
 
     public enum TownSize
