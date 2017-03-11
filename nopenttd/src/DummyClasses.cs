@@ -13,4 +13,7 @@ namespace Nopenttd.src
     public struct Town //TODO DUMMY
     {
     };
+
+    public struct Window
+    { }
 }
