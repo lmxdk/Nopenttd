@@ -16,10 +16,10 @@ namespace Nopenttd
 
 /** The define of a TarList. */
 
-    public struct TarListEntry
+    public class TarListEntry
     {
-        string filename;
-        string dirname;
+        public string filename;
+        public string dirname;
 
         /* MSVC goes copying around this struct after initialisation, so it tries
          * to free filename, which isn't set at that moment... but because it
@@ -32,11 +32,11 @@ namespace Nopenttd
         //}
     }
 
-    public struct TarFileListEntry
+    public class TarFileListEntry
     {
-        string tar_filename;
-        int size;
-        int position;
+        public string tar_filename;
+        public int size;
+        public int position;
     }
 
     //typedef std::map<std::string, TarListEntry> TarList;
@@ -45,9 +45,7 @@ namespace Nopenttd
     }
 
 //typedef std::map<std::string, TarFileListEntry> TarFileList;
-    public class TarFileList : Dictionary<string, TarFileListEntry>
-    {
-    }
+    
 
 //extern TarList _tar_list[NUM_SUBDIRS];
 //extern TarFileList _tar_filelist[NUM_SUBDIRS];

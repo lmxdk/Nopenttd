@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Nopenttd
@@ -166,7 +167,7 @@ public void Clear()
 
 
         /// last comment in file
-        string comment;
+        public string comment;
 
         /// NULL terminated list with group names that are lists
         public List<string> list_group_names;
@@ -263,7 +264,7 @@ public void LoadFromDisk(string filename, Subdirectory subdir)
             var lineLength = line.Length;
             if (line.Last() != ']')
             {
-                this.ReportFileError("ini: invalid group name '", buffer, "'");
+                this.ReportFileError("ini: invalid group name '", line, "'");
             }
             else
             {
@@ -345,18 +346,22 @@ public void LoadFromDisk(string filename, Subdirectory subdir)
             /* remove starting quotation marks */
             if (quoted) index++;
             /* remove ending quotation marks */
-            e = t + strlen(t);
-            if (e > t && e[-1] == '\"') e--;
-            *e = '\0';
+            var value = (string)null;
+            if (index < line.Length - 1)
+            {
+                value = line.EndsWith("\"")
+                    ? line.Substring(index, line.Length - index - 1)
+                    : line.Substring(index);
+            }
 
             /* If the value was not quoted and empty, it must be NULL */
-            item.value = (!quoted && e == t) ? null : t;
+            item.value = value;
             //if (item.value != null) str_validate(item.value, item.value + strlen(item.value));
         }
         else
         {
             /* it's an orphan item */
-            this.ReportFileError("ini: '", buffer, "' outside of group");
+            this.ReportFileError("ini: '", line, "' outside of group");
         }
     }
 
@@ -390,12 +395,101 @@ abstract FILE* OpenFile(string filename, Subdirectory subdir, int* size);
 
     public class IniFile : IniLoadFile
     {
-        IniFile(string list_group_names = null);
+        /**
+ * Create a new ini file with given group names.
+ * @param list_group_names A \c NULL terminated list with group names that should be loaded as lists instead of variables. @see IGT_LIST
+ */
 
-        bool SaveToDisk(string filename);
-
+        public IniFile(List<string> list_group_names = null) : base(list_group_names)
+        {
+            
+        }
         virtual FILE* OpenFile(string filename, Subdirectory subdir, size_t* size);
         virtual void ReportFileError(string pre, string buffer, string post);
+
+
+		
+        /**
+         * Save the Ini file's data to the disk.
+         * @param filename the file to save to.
+         * @return true if saving succeeded.
+         */
+        public bool SaveToDisk(string filename)
+{
+    /*
+	 * First write the configuration to a (temporary) file and then rename
+	 * that file. This to prevent that when OpenTTD crashes during the save
+	 * you end up with a truncated configuration file.
+	 */
+    var file_new = filename + ".new";
+
+            //FILE* f = fopen(file_new, "w");
+            //if (f == NULL) return false;
+
+    using (var stream = File.OpenWrite(file_new))
+    {
+        using (var writer = new StreamWriter(stream, Encoding.UTF8))
+        {
+
+
+            foreach (var group in groups.Values)
+            {
+                if (group.comment != null)
+                {
+                    writer.Write(group.comment);
+                }
+
+                writer.WriteLine(group.name);
+                foreach (var item in group.items.Values)
+                {
+                    if (group.comment != null)
+                    {
+                        writer.Write(group.comment);
+                    }
+
+                    /* protect item.name with quotes if needed */
+                    if (item.name.Contains(' ') || item.name[0] == '[')
+                    {
+
+                        writer.Write($"\"{item.name}\"");
+                    }
+                    else
+                    {
+                        writer.Write(item.name);
+                    }
+
+                    writer.WriteLine($" = {item.value}");
+                }
+            }
+            if (this.comment != null)
+            {
+                writer.Write(this.comment);
+            }
+
+        }
+    }
+
+	var newFile = new FileInfo(file_new);
+    newFile.CopyTo(filename, true);
+	newFile.Delete();
+
+	return true;
+}
+
+/* virtual */
+FILE* IniFile::OpenFile(const char* filename, Subdirectory subdir, size_t* size)
+{
+    /* Open the text file in binary mode to prevent end-of-line translations
+	 * done by ftell() and friends, as defined by K&R. */
+    return FioFOpenFile(filename, "rb", subdir, size);
+}
+
+/* virtual */
+void IniFile::ReportFileError(const char* const pre, const char* const buffer, const char* const post)
+{
+    ShowInfoF("%s%s%s", pre, buffer, post);
+}
+
     }
 
 }

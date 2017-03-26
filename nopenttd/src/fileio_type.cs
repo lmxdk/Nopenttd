@@ -9,6 +9,10 @@
 
 /** @file fileio_type.h Types for Standard In/Out file operations */
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+
 namespace Nopenttd
 {
 
@@ -242,5 +246,10 @@ namespace Nopenttd
         NUM_SEARCHPATHS
     }
 
-//DECLARE_POSTFIX_INCREMENT(Searchpath)
+    //DECLARE_POSTFIX_INCREMENT(Searchpath)
+
+    
+
+       
+
 }

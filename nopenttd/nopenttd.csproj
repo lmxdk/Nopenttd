@@ -57,6 +57,7 @@
     <Compile Include="src\Core\SmallStackItem.cs" />
     <Compile Include="src\Core\StringList.cs" />
     <Compile Include="src\DummyClasses.cs" />
+    <Compile Include="src\fileio.cs" />
     <Compile Include="src\news_type.cs" />
     <Compile Include="src\Settings\Settings.cs" />
     <Compile Include="src\SharedState.cs" />
@@ -233,6 +234,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\ini_type.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\fileio_func.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
