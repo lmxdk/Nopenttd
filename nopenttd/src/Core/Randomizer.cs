@@ -203,7 +203,7 @@ namespace Nopenttd.Core
          * (Re)set the state of the random number generators.
          * @param seed the new state
          */
-        public void SetRandomSeed(uint seed)
+        public static void SetRandomSeed(uint seed)
         {
             _random.SetSeed(seed);
             _interactive_random.SetSeed(seed * 0x1234567);

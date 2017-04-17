@@ -5,3 +5,4 @@ nopenttd/obj/
 *.VC.db
 nopenttd/bin/
 packages/
+.vs/

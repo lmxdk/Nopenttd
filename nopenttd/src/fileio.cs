@@ -18,6 +18,7 @@ using System.Reflection;
 using System.Text;
 using NLog;
 using Nopenttd;
+using Nopenttd.Os.Windows;
 using Nopenttd.src;
 
 namespace Nopenttd
@@ -36,9 +37,14 @@ namespace Nopenttd
 //#include "safeguards.h"
 
 /** Structure for keeping several open files with just one data buffer. */
-public class Fio {                                 /// position pointer in local buffer and last valid byte of buffer
-	public byte[] buffer;                           /// current (system) position in file
-	public int pos;                                 /// current file handle
+public class Fio
+{
+    /// position pointer in local buffer and last valid byte of buffer
+	public byte[] buffer;
+    public int bufferPos;
+    public int bufferContentSize;
+        /// current (system) position in file
+        public int pos;                                 /// current file handle
 	public FileStream cur_fh;                       /// current filename
 	public string filename;                         /// array of file handles we can have open
 	public FileStream[] handles = new FileStream[MAX_FILE_SLOTS];      /// local buffer when read from file
@@ -49,6 +55,9 @@ public class Fio {                                 /// position pointer in local
 
     public static class FileIO
     {
+
+        public static string _personal_dir;
+
         private static readonly ILogger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType.FullName);
 
         /** Size of the #Fio data buffer. */
@@ -60,10 +69,11 @@ public class Fio {                                 /// position pointer in local
         /** Whether the working directory should be scanned. */
         public static bool _do_scan_working_directory = true;
 
-        static string _config_file;
-        static string _highscore_file;
+        public static string _config_file;
+        public static string _highscore_file;
 
-        private static readonly string[] _subdirs = new[]
+        //private
+            public static readonly string[] _subdirs = new[]
         {
             "",
             "save" + Path.PathSeparator,
@@ -199,7 +209,7 @@ public class Fio {                                 /// position pointer in local
 
                 if (_tar_filelist[(int) subdir].TryGetValue(resolved_name, out var entry))
                 {
-                    f = FioFOpenFileTar(entry, filesize);
+                    f = FioFOpenFileTar(entry, out filesize);
                 }
             }
 
@@ -211,8 +221,12 @@ public class Fio {                                 /// position pointer in local
                 {
                     case Nopenttd.Subdirectory.BASESET_DIR:
                         f = FioFOpenFile(filename, mode, Nopenttd.Subdirectory.OLD_GM_DIR, out filesize);
-                        if (f != null) break;
-                    /* FALL THROUGH */
+                        if (f == null)
+                        {
+                            /* originally FALL THROUGH */
+                            f = FioFOpenFile(filename, mode, Nopenttd.Subdirectory.OLD_DATA_DIR, out filesize);
+                        }
+                        break;
                     case Nopenttd.Subdirectory.NEWGRF_DIR:
                         f = FioFOpenFile(filename, mode, Nopenttd.Subdirectory.OLD_DATA_DIR, out filesize);
                         break;
@@ -255,8 +269,10 @@ public class Fio {                                 /// position pointer in local
 
         public static void FioSeekTo(int pos, SeekOrigin mode)
         {
-            if (mode == SeekOrigin.Begin) pos += FioGetPos();
-            _fio.buffer = _fio.buffer_end = _fio.buffer_start + FIO_BUFFER_SIZE;
+            if (mode == SeekOrigin.Begin)
+            {
+                pos += FioGetPos();
+            }
             _fio.pos = pos;
             if (_fio.cur_fh.Seek(_fio.pos, SeekOrigin.Begin) < 0)
             {
@@ -270,33 +286,34 @@ public class Fio {                                 /// position pointer in local
          * @param pos New absolute position in the new file.
          */
 
-        public static void FioSeekToFile(uint8 slot, size_t pos)
+        public static void FioSeekToFile(int slot, int pos)
         {
-            FILE* f;
-            f = _fio.handles[slot];
-            assert(f != NULL);
+            var f = _fio.handles[slot];
+            Debug.Assert(f != null);
             _fio.cur_fh = f;
             _fio.filename = _fio.filenames[slot];
-            FioSeekTo(pos, SEEK_SET);
+            FioSeekTo(pos, SeekOrigin.Begin);
         }
 
         /**
          * Read a byte from the file.
          * @return Read byte.
          */
-
         public static byte FioReadByte()
         {
-            if (_fio.buffer == _fio.buffer_end)
+            if (_fio.bufferPos >= _fio.bufferContentSize)
             {
-                _fio.buffer = _fio.buffer_start;
-                size_t size = fread(_fio.buffer, 1, FIO_BUFFER_SIZE, _fio.cur_fh);
-                _fio.pos += size;
-                _fio.buffer_end = _fio.buffer_start + size;
+                _fio.bufferPos = 0;
+                _fio.bufferContentSize = _fio.cur_fh.Read(_fio.buffer, 0, FIO_BUFFER_SIZE);
+                _fio.pos += _fio.bufferContentSize;
 
-                if (size == 0) return 0;
+                if (_fio.bufferContentSize == 0) return 0;
             }
-            return *_fio.buffer++;
+
+
+            var value = _fio.buffer[_fio.bufferPos++];
+            _fio.pos++;
+            return value;
         }
 
         /**
@@ -308,8 +325,8 @@ public class Fio {                                 /// position pointer in local
         {
             for (;;)
             {
-                int m = min(_fio.buffer_end - _fio.buffer, n);
-                _fio.buffer += m;
+                var m = Math.Min(_fio.bufferContentSize - _fio.bufferPos, n);
+                _fio.bufferPos+= m;
                 n -= m;
                 if (n == 0) break;
                 FioReadByte();
@@ -324,8 +341,8 @@ public class Fio {                                 /// position pointer in local
 
         public static ushort FioReadWord()
         {
-            byte b = FioReadByte();
-            return (FioReadByte() << 8) | b;
+            var lower = FioReadByte();
+            return (ushort)((FioReadByte() << 8) | lower);
         }
 
         /**
@@ -335,8 +352,8 @@ public class Fio {                                 /// position pointer in local
 
         public static uint FioReadDword()
         {
-            uint b = FioReadWord();
-            return (FioReadWord() << 16) | b;
+            var lower = FioReadWord();
+            return (uint)((FioReadWord() << 16) | lower);
         }
 
         /**
@@ -385,9 +402,7 @@ public class Fio {                                 /// position pointer in local
          */
         public static void FioOpenFile(int slot, string filename, Subdirectory subdir)
         {
-            FileStream f;
-
-            f = FioFOpenFile(filename, FileMode.Open, subdir);
+            var f = FioFOpenFile(filename, FileMode.Open, subdir, out var filesize);
             if (f == null)
             {
                 usererror("Cannot open file '%s'", filename);
@@ -412,7 +427,7 @@ public class Fio {                                 /// position pointer in local
             }
             _fio.shortnames[slot].ToLower();
             
-            FioSeekToFile(slot, (uint) pos);
+            FioSeekToFile(slot, (int) pos);
         }
 
         /**
@@ -423,10 +438,10 @@ public class Fio {                                 /// position pointer in local
          */
         public static bool FioCheckFileExists(string filename, Subdirectory subdir)
         {
-            var f = FioFOpenFile(filename, "rb", subdir);
+            var f = FioFOpenFile(filename, "rb", subdir, out var filesize);
             if (f == null) return false;
 
-            FioFCloseFile(f);
+            f.Close();
             return true;
         }
 
@@ -436,7 +451,7 @@ public class Fio {                                 /// position pointer in local
  * @return true if and only if the file exists.
  */
         [Obsolete("Use File.Exists", false)]
-        public static FileExists(string filename)
+        public static bool FileExists(string filename)
         {
             return File.Exists(filename);
         }
@@ -451,7 +466,7 @@ public class Fio {                                 /// position pointer in local
             f.Close();
         }
 
-        public static string FioGetFullPath(string buf, Searchpath sp, Subdirectory subdir, string filename)
+        public static string FioGetFullPath(Searchpath sp, Subdirectory subdir, string filename)
         {
             Debug.Assert(subdir < Subdirectory.NUM_SUBDIRS);
             Debug.Assert(sp < Searchpath.NUM_SEARCHPATHS);
@@ -467,17 +482,16 @@ public class Fio {                                 /// position pointer in local
          * @param filename Filename to look for.
          * @return \a buf containing the path if the path was found, else \c NULL.
          */
-        public static string FioFindFullPath(string buf, Subdirectory subdir, string filename)
+        public static string FioFindFullPath(Subdirectory subdir, string filename)
         {
-            Searchpath sp;
             Debug.Assert(subdir < Subdirectory.NUM_SUBDIRS);
 
             foreach (var sp in FOR_ALL_SEARCHPATHS())
             {
-                buf = FioGetFullPath(buf, sp, subdir, filename);
-                if (File.Exists(buf))
+                var path = FioGetFullPath(sp, subdir, filename);
+                if (File.Exists(path))
                 {
-                    return buf;
+                    return path;
                 }
             }
 
@@ -493,9 +507,7 @@ public class Fio {                                 /// position pointer in local
         }
 
         public static string FioGetDirectory(string buf, Subdirectory subdir)
-        {
-            Searchpath sp;
-
+        {            
             /* Find and return the first valid directory */
             foreach (var sp in FOR_ALL_SEARCHPATHS())
             {
@@ -586,7 +598,7 @@ public class Fio {                                 /// position pointer in local
  * @return the malloced full path
  */
 
-        public string BuildWithFullPath(string dir)
+        public static string BuildWithFullPath(string dir)
         {
             string dest = dir;
 
@@ -610,7 +622,7 @@ public class Fio {                                 /// position pointer in local
  * @param subdir  the subdirectory to look in.
  */
 
-        public string FioTarFirstDir(string tarname, Subdirectory subdir)
+        public static string FioTarFirstDir(string tarname, Subdirectory subdir)
         {
             if (_tar_list[(int) subdir].TryGetValue(tarname, out var it))
             {
@@ -643,7 +655,7 @@ public class Fio {                                 /// position pointer in local
             }
         }
 
-        void FioTarAddLink(string src, string dest, Subdirectory subdir)
+        public static void FioTarAddLink(string src, string dest, Subdirectory subdir)
         {
             TarAddLink(src, dest, subdir);
         }
@@ -726,7 +738,7 @@ public class Fio {                                 /// position pointer in local
 public bool AddFile(Subdirectory sd, string filename)
 {
 	this.subdir = sd;
-	return this.AddFile(filename, 0);
+	return this.AddFile(filename, 0, null);
 }
 
         public class TarHeader
@@ -786,7 +798,7 @@ public bool AddFile(Subdirectory sd, string filename)
                 }
             }
         }
-        public bool AddFile(string filename, int basepath_length, string tar_filename)
+        public override bool AddFile(string filename, int basepath_length, string tar_filename)
 {
 	/* No tar within tar. */
 	Debug.Assert(tar_filename == null);
@@ -799,8 +811,10 @@ public bool AddFile(Subdirectory sd, string filename)
     {
         return false;
     }
-    
-    try
+
+            var links = new Dictionary<string, string>();
+
+            try
     {
         using (var f = new FileInfo(filename).OpenRead())
         {
@@ -809,8 +823,7 @@ public bool AddFile(Subdirectory sd, string filename)
 	FileIO._tar_list[(int)this.subdir][filename].filename = filename;
         FileIO._tar_list[(int)this.subdir][filename].dirname = null;
     var dupped_filename = filename;
-            /// Temporary list to collect links
-    var links = new Dictionary<string, string>(); 
+            /// Temporary list to collect links    
             
     string name = null; //char[sizeof(th.prefix) + 1 + sizeof(th.name) + 1];
     string link = null; //char link[sizeof(th.linkname) + 1];
@@ -998,8 +1011,8 @@ public bool AddFile(Subdirectory sd, string filename)
              */
     foreach (var link in links)
     {
-        var src = link.first;
-        var dest = link.second;
+        var src = link.Key;
+        var dest = link.Value;
         TarAddLink(src, dest, this.subdir);
     }
 
@@ -1100,287 +1113,130 @@ public bool ExtractTar(string tar_filename, Subdirectory subdir)
 	return true;
 }
 
-/**
- * Determine the base (personal dir and game data dir) paths
- * @param exe the path from the current path to the executable
- * @note defined in the OS related files (os2.cpp, win32.cpp, unix.cpp etc)
- */
-extern void DetermineBasePaths(string exe);
 
-/**
- * Changes the working directory to the path of the give executable.
- * For OSX application bundles '.app' is the required extension of the bundle,
- * so when we crop the path to there, when can remove the name of the bundle
- * in the same way we remove the name from the executable name.
- * @param exe the path to the executable
- */
-public static bool ChangeWorkingDirectoryToExecutable(string exe)
+        private static readonly Searchpath[] new_openttd_cfg_order = {
+                    Searchpath.SP_PERSONAL_DIR, Searchpath.SP_BINARY_DIR, Searchpath.SP_WORKING_DIR, Searchpath.SP_SHARED_DIR, Searchpath.SP_INSTALLATION_DIR
+                };
+
+
+        private static readonly Subdirectory[] default_subdirs = {
+        Subdirectory.SAVE_DIR, Subdirectory.AUTOSAVE_DIR, Subdirectory.SCENARIO_DIR, Subdirectory.HEIGHTMAP_DIR, Subdirectory.BASESET_DIR, Subdirectory.NEWGRF_DIR, Subdirectory.AI_DIR, Subdirectory.AI_LIBRARY_DIR, Subdirectory.GAME_DIR, Subdirectory.GAME_LIBRARY_DIR, Subdirectory.SCREENSHOT_DIR
+    };
+        private static readonly Subdirectory[] dirs = { Subdirectory.SCENARIO_DIR, Subdirectory.HEIGHTMAP_DIR, Subdirectory.BASESET_DIR, Subdirectory.NEWGRF_DIR, Subdirectory.AI_DIR, Subdirectory.AI_LIBRARY_DIR, Subdirectory.GAME_DIR, Subdirectory.GAME_LIBRARY_DIR };
+
+        /**
+         * Acquire the base paths (personal dir and game data dir),
+         * fill all other paths (save dir, autosave dir etc) and
+         * make the save and scenario directories.
+         * @param exe the path from the current path to the executable
+         */
+        void DeterminePaths(string exe)
 {
-	var success = false;
-	var s = const_cast<char *>(strrchr(exe, PATHSEPCHAR));
-	if (s != null) {
-		*s = '\0';
-//#if defined(__DJGPP__)
-//		/* If we want to go to the root, we can't use cd C:, but we must use '/' */
-//		if (s[-1] == ':') chdir("/");
-//#endif
-		if (Directory.Exists(exe) == false) {
-			Log.Debug($"Directory '{exe}' with the binary does not exist?");
-		} else {
-			success = true;
+	Win32.DetermineBasePaths(exe);
+
+            foreach (var sp in FileIO.FOR_ALL_SEARCHPATHS())
+            {
+                if (sp == Searchpath.SP_WORKING_DIR && !FileIO._do_scan_working_directory)
+                {
+                    continue;
+                }
+		Log.Debug($"{FileIO._searchpaths[sp]} added as search path");
+	}
+
+
+	string config_dir;
+	if (FileIO._config_file != null) {
+		config_dir = FileIO._config_file;
+		var index = FileIO._config_file.LastIndexOf(Path.PathSeparator);
+		if (index < 0) {
+			config_dir = "";
+		} else
+		{
+		    config_dir = config_dir.Substring(0, index + 1);
 		}
-		*s = PATHSEPCHAR;
-	}
-	return success;
-}
+	} else
+	{
+	    var personal_dir = FileIO.FioFindFullPath(Subdirectory.BASE_DIR, "openttd.cfg");
 
-/**
- * Whether we should scan the working directory.
- * It should not be scanned if it's the root or
- * the home directory as in both cases a big data
- * directory can cause huge amounts of unrelated
- * files scanned. Furthermore there are nearly no
- * use cases for the home/root directory to have
- * OpenTTD directories.
- * @return true if it should be scanned.
- */
-public bool DoScanWorkingDirectory()
-{
-	/* No working directory, so nothing to do. */
-	if (FileIO._searchpaths[(int)Searchpath.SP_WORKING_DIR] == null) return false;
-
-	/* Working directory is root, so do nothing. */
-	if (FileIO._searchpaths[(int)Searchpath.SP_WORKING_DIR] == Path.PathSeparator.ToString()) return false;
-
-	/* No personal/home directory, so the working directory won't be that. */
-	if (FileIO._searchpaths[(int)Searchpath.SP_PERSONAL_DIR] == null) return true;
-
-    var tmp = FileIO._searchpaths[(int)Searchpath.SP_WORKING_DIR] +  PERSONAL_DIR;
-	tmp = FileIO.AppendPathSeparator(tmp);
-	return tmp != FileIO._searchpaths[(int)Searchpath.SP_PERSONAL_DIR];
-}
-
-/**
- * Determine the base (personal dir and game data dir) paths
- * @param exe the path to the executable
- */
-void DetermineBasePaths(const char *exe)
-{
-	char tmp[MAX_PATH];
-	/* getenv is highly unsafe; duplicate it as soon as possible,
-	 * or at least before something else touches the environment
-	 * variables in any way. It can also contain all kinds of
-	 * unvalidated data we rather not want internally. */
-	string homedir = Environment.GetEnvironmentVariable("HOME");
-	
-	if (homedir == null) {
-		const struct passwd *pw = getpwuid(getuid());
-		homedir = (pw == null) ? null : stredup(pw.pw_dir);
-	}
-
-	if (homedir != null) {
-		ValidateString(homedir);
-		seprintf(tmp, lastof(tmp), "%s" PATHSEP "%s", homedir, PERSONAL_DIR);
-		AppendPathSeparator(tmp, lastof(tmp));
-
-		_searchpaths[SP_PERSONAL_DIR] = stredup(tmp);
-		free(homedir);
-	} else {
-		_searchpaths[SP_PERSONAL_DIR] = null;
-	}
-
-#if defined(WITH_SHARED_DIR)
-	seprintf(tmp, lastof(tmp), "%s", SHARED_DIR);
-	AppendPathSeparator(tmp, lastof(tmp));
-	_searchpaths[SP_SHARED_DIR] = stredup(tmp);
-#else
-	_searchpaths[SP_SHARED_DIR] = null;
-#endif
-
-	if (getcwd(tmp, MAX_PATH) == null) *tmp = '\0';
-	AppendPathSeparator(tmp, lastof(tmp));
-	_searchpaths[SP_WORKING_DIR] = stredup(tmp);
-
-	_do_scan_working_directory = DoScanWorkingDirectory();
-
-	/* Change the working directory to that one of the executable */
-	if (ChangeWorkingDirectoryToExecutable(exe)) {
-		if (getcwd(tmp, MAX_PATH) == null) *tmp = '\0';
-		AppendPathSeparator(tmp, lastof(tmp));
-		_searchpaths[SP_BINARY_DIR] = stredup(tmp);
-	} else {
-		_searchpaths[SP_BINARY_DIR] = null;
-	}
-
-	if (_searchpaths[SP_WORKING_DIR] != null) {
-		/* Go back to the current working directory. */
-		if (chdir(_searchpaths[SP_WORKING_DIR]) != 0) {
-			Log.Debug(misc, 0, "Failed to return to working directory!");
-		}
-	}
-
-#if defined(__MORPHOS__) || defined(__AMIGA__) || defined(DOS) || defined(OS2)
-	_searchpaths[SP_INSTALLATION_DIR] = null;
-#else
-	seprintf(tmp, lastof(tmp), "%s", GLOBAL_DATA_DIR);
-	AppendPathSeparator(tmp, lastof(tmp));
-	_searchpaths[SP_INSTALLATION_DIR] = stredup(tmp);
-#endif
-#ifdef WITH_COCOA
-extern void cocoaSetApplicationBundleDir();
-	cocoaSetApplicationBundleDir();
-#else
-	_searchpaths[SP_APPLICATION_BUNDLE_DIR] = null;
-#endif
-}
-#endif /* defined(WIN32) || defined(WINCE) */
-
-const char *_personal_dir;
-
-/**
- * Acquire the base paths (personal dir and game data dir),
- * fill all other paths (save dir, autosave dir etc) and
- * make the save and scenario directories.
- * @param exe the path from the current path to the executable
- */
-void DeterminePaths(const char *exe)
-{
-	DetermineBasePaths(exe);
-
-#if defined(WITH_XDG_BASEDIR) && defined(WITH_PERSONAL_DIR)
-	char config_home[MAX_PATH];
-
-	const char *xdg_config_home = xdgConfigHome(null);
-	seprintf(config_home, lastof(config_home), "%s" PATHSEP "%s", xdg_config_home,
-			PERSONAL_DIR[0] == '.' ? &PERSONAL_DIR[1] : PERSONAL_DIR);
-	free(xdg_config_home);
-
-	AppendPathSeparator(config_home, lastof(config_home));
-#endif
-
-	Searchpath sp;
-	FOR_ALL_SEARCHPATHS(sp) {
-		if (sp == SP_WORKING_DIR && !_do_scan_working_directory) continue;
-		Log.Debug(misc, 4, "%s added as search path", _searchpaths[sp]);
-	}
-
-	char *config_dir;
-	if (_config_file != null) {
-		config_dir = stredup(_config_file);
-		char *end = strrchr(config_dir, PATHSEPCHAR);
-		if (end == null) {
-			config_dir[0] = '\0';
+        if (personal_dir != null) {
+			var end = personal_dir.LastIndexOf(Path.PathSeparator);
+            if (end >= 0)
+            {
+                personal_dir.Substring(0, end); //end[1] = '\0';
+            }
+			config_dir = personal_dir;
 		} else {
-			end[1] = '\0';
-		}
-	} else {
-		char personal_dir[MAX_PATH];
-		if (FioFindFullPath(personal_dir, lastof(personal_dir), BASE_DIR, "openttd.cfg") != null) {
-			char *end = strrchr(personal_dir, PATHSEPCHAR);
-			if (end != null) end[1] = '\0';
-			config_dir = stredup(personal_dir);
-			_config_file = str_fmt("%sopenttd.cfg", config_dir);
-		} else {
-#if defined(WITH_XDG_BASEDIR) && defined(WITH_PERSONAL_DIR)
-			/* No previous configuration file found. Use the configuration folder from XDG. */
-			config_dir = config_home;
-#else
-			static const Searchpath new_openttd_cfg_order[] = {
-					SP_PERSONAL_DIR, SP_BINARY_DIR, SP_WORKING_DIR, SP_SHARED_DIR, SP_INSTALLATION_DIR
-				};
-
+			
 			config_dir = null;
-			for (uint i = 0; i < lengthof(new_openttd_cfg_order); i++) {
-				if (IsValidSearchPath(new_openttd_cfg_order[i])) {
-					config_dir = stredup(_searchpaths[new_openttd_cfg_order[i]]);
+			foreach (var path in new_openttd_cfg_order) {
+				if (FileIO.IsValidSearchPath(path)) {
+					config_dir = FileIO._searchpaths[(int)path];
 					break;
 				}
 			}
-			assert(config_dir != null);
-#endif
-			_config_file = str_fmt("%sopenttd.cfg", config_dir);
+			Debug.Assert(config_dir != null);
 		}
-	}
+            FileIO._config_file = config_dir + "openttd.cfg";
+        }
 
-	Log.Debug(misc, 3, "%s found as config directory", config_dir);
+	Log.Debug(config_dir + " found as config directory");
 
-	_highscore_file = str_fmt("%shs.dat", config_dir);
-	extern char *_hotkeys_file;
-	_hotkeys_file = str_fmt("%shotkeys.cfg", config_dir);
-	extern char *_windows_file;
-	_windows_file = str_fmt("%swindows.cfg", config_dir);
+    FileIO._highscore_file = config_dir + "hs.dat";
+    Hotkeys._hotkeys_file = config_dir + "hotkeys.cfg";
+    Window._windows_file = config_dir + "windows.cfg";
 
-#if defined(WITH_XDG_BASEDIR) && defined(WITH_PERSONAL_DIR)
-	if (config_dir == config_home) {
-		/* We are using the XDG configuration home for the config file,
-		 * then store the rest in the XDG data home folder. */
-		_personal_dir = _searchpaths[SP_PERSONAL_DIR_XDG];
-		FioCreateDirectory(_personal_dir);
-	} else
-#endif
-	{
-		_personal_dir = config_dir;
-	}
+	FileIO._personal_dir = config_dir;
 
-	/* Make the necessary folders */
-#if !defined(__MORPHOS__) && !defined(__AMIGA__) && defined(WITH_PERSONAL_DIR)
-	FioCreateDirectory(config_dir);
-	if (config_dir != _personal_dir) FioCreateDirectory(_personal_dir);
-#endif
+            /* Make the necessary folders */
+            Directory.CreateDirectory(config_dir);
+    if (config_dir != FileIO._personal_dir)
+    {
+                Directory.CreateDirectory(FileIO._personal_dir);
+    }
 
-	Log.Debug(misc, 3, "%s found as personal directory", _personal_dir);
+	Log.Debug(FileIO._personal_dir + " found as personal directory");
+            
 
-	static const Subdirectory default_subdirs[] = {
-		SAVE_DIR, AUTOSAVE_DIR, SCENARIO_DIR, HEIGHTMAP_DIR, BASESET_DIR, NEWGRF_DIR, AI_DIR, AI_LIBRARY_DIR, GAME_DIR, GAME_LIBRARY_DIR, SCREENSHOT_DIR
-	};
-
-	for (uint i = 0; i < lengthof(default_subdirs); i++) {
-		char *dir = str_fmt("%s%s", _personal_dir, _subdirs[default_subdirs[i]]);
-		FioCreateDirectory(dir);
-		free(dir);
+	foreach (var subdir in default_subdirs) {
+        var dir = FileIO._personal_dir + FileIO._subdirs[(int)subdir];
+	    Directory.CreateDirectory(dir);
 	}
 
 	/* If we have network we make a directory for the autodownloading of content */
-	_searchpaths[SP_AUTODOWNLOAD_DIR] = str_fmt("%s%s", _personal_dir, "content_download" PATHSEP);
-#ifdef ENABLE_NETWORK
-	FioCreateDirectory(_searchpaths[SP_AUTODOWNLOAD_DIR]);
+	FileIO._searchpaths[(int)Searchpath.SP_AUTODOWNLOAD_DIR] = $"{FileIO._personal_dir}content_download{Path.PathSeparator}";
+    Directory.CreateDirectory(FileIO._searchpaths[(int) Searchpath.SP_AUTODOWNLOAD_DIR]);
 
 	/* Create the directory for each of the types of content */
-	const Subdirectory dirs[] = { SCENARIO_DIR, HEIGHTMAP_DIR, BASESET_DIR, NEWGRF_DIR, AI_DIR, AI_LIBRARY_DIR, GAME_DIR, GAME_LIBRARY_DIR };
-	for (uint i = 0; i < lengthof(dirs); i++) {
-		char *tmp = str_fmt("%s%s", _searchpaths[SP_AUTODOWNLOAD_DIR], _subdirs[dirs[i]]);
-		FioCreateDirectory(tmp);
-		free(tmp);
+	foreach (var dir in dirs) {
+		var tmp = FileIO._searchpaths[(int)Searchpath.SP_AUTODOWNLOAD_DIR] + FileIO._subdirs[dir];
+	    Directory.CreateDirectory(tmp);
 	}
 
-	extern char *_log_file;
-	_log_file = str_fmt("%sopenttd.log",  _personal_dir);
-#else /* ENABLE_NETWORK */
-	/* If we don't have networking, we don't need to make the directory. But
-	 * if it exists we keep it, otherwise remove it from the search paths. */
-	if (!FileExists(_searchpaths[SP_AUTODOWNLOAD_DIR]))  {
-		free(_searchpaths[SP_AUTODOWNLOAD_DIR]);
-		_searchpaths[SP_AUTODOWNLOAD_DIR] = null;
-	}
-#endif /* ENABLE_NETWORK */
+    Dedicated._log_file = FileIO._personal_dir + "openttd.log";
 }
 
 /**
  * Sanitizes a filename, i.e. removes all illegal characters from it.
  * @param filename the "\0" terminated filename
  */
-void SanitizeFilename(char *filename)
+string SanitizeFilename(string filename)
 {
-	for (; *filename != '\0'; filename++) {
-		switch (*filename) {
+    var builder = new StringBuilder();
+	foreach (var c in filename) {
+		switch (c) {
 			/* The following characters are not allowed in filenames
 			 * on at least one of the supported operating systems: */
 			case ':': case '\\': case '*': case '?': case '/':
 			case '<': case '>': case '|': case '"':
-				*filename = '_';
+				builder.Append('_');
 				break;
+            default:
+		        builder.Append(c);
+                        break;
+		        ;
 		}
 	}
+    return builder.ToString();
 }
 
 /**
@@ -1391,29 +1247,14 @@ void SanitizeFilename(char *filename)
  * @return Pointer to new memory containing the loaded data, or \c null if loading failed.
  * @note If \a maxsize less than the length of the file, loading fails.
  */
-void *ReadFileToMem(const char *filename, size_t *lenp, size_t maxsize)
+public byte[] ReadFileToMem(string filename, int maxsize) //lenp removed
 {
-	FILE *in = fopen(filename, "rb");
-	if (in == null) return null;
-
-	fseek(in, 0, SEEK_END);
-	size_t len = ftell(in);
-	fseek(in, 0, SEEK_SET);
-	if (len > maxsize) {
-		fclose(in);
-		return null;
-	}
-	byte *mem = MallocT<byte>(len + 1);
-	mem[len] = 0;
-	if (fread(mem, len, 1, in) != 1) {
-		fclose(in);
-		free(mem);
-		return null;
-	}
-	fclose(in);
-
-	*lenp = len;
-	return mem;
+    var file = new FileInfo(filename);
+    if (file.Length > maxsize)
+    {
+        return null;
+    }
+    return File.ReadAllBytes(filename);
 }
 
 /**
@@ -1422,12 +1263,14 @@ void *ReadFileToMem(const char *filename, size_t *lenp, size_t maxsize)
  * @param filename  The filename to look in for the extension.
  * @return True iff the extension is null, or the filename ends with it.
  */
-static bool MatchesExtension(const char *extension, const char *filename)
+public static bool MatchesExtension(string extension, string filename)
 {
-	if (extension == null) return true;
+    if (extension == null)
+    {
+        return true;
+    }
 
-	const char *ext = strrchr(filename, extension[0]);
-	return ext != null && strcasecmp(ext, extension) == 0;
+    return filename?.EndsWith(extension, StringComparison.CurrentCultureIgnoreCase) ?? false;
 }
 
 /**
@@ -1439,40 +1282,38 @@ static bool MatchesExtension(const char *extension, const char *filename)
  * @param basepath_length from where in the path are we 'based' on the search path
  * @param recursive       whether to recursively search the sub directories
  */
-static uint ScanPath(FileScanner *fs, const char *extension, const char *path, size_t basepath_length, bool recursive)
+public static uint ScanPath(FileScanner fs, string extension, string path, int basepath_length, bool recursive)
 {
-	extern bool FiosIsValidFile(const char *path, const struct dirent *ent, struct stat *sb);
-
 	uint num = 0;
-	struct stat sb;
-	struct dirent *dirent;
-	DIR *dir;
 
-	if (path == null || (dir = ttd_opendir(path)) == null) return 0;
+	if (path == null || Directory.Exists(path) == false)
+    {
+        return 0;
+    }
+    var dir = new DirectoryInfo(path);
+	foreach (var file in dir.GetFiles())
+    {
+        if (file.Exists == false)
+        {
+            continue;
+        }
 
-	while ((dirent = readdir(dir)) != null) {
-		const char *d_name = FS2OTTD(dirent.d_name);
-		char filename[MAX_PATH];
+        var filename = path + file.Name;
 
-		if (!FiosIsValidFile(path, dirent, &sb)) continue;
-
-		seprintf(filename, lastof(filename), "%s%s", path, d_name);
-
-		if (S_ISDIR(sb.st_mode)) {
-			/* Directory */
-			if (!recursive) continue;
-			if (strcmp(d_name, ".") == 0 || strcmp(d_name, "..") == 0) continue;
-			if (!AppendPathSeparator(filename, lastof(filename))) continue;
-			num += ScanPath(fs, extension, filename, basepath_length, recursive);
-		} else if (S_ISREG(sb.st_mode)) {
-			/* File */
-			if (MatchesExtension(extension, filename) && fs.AddFile(filename, basepath_length, null)) num++;
-		}
+        if (MatchesExtension(extension, filename) && fs.AddFile(filename, basepath_length, null)) {num++;}
 	}
+    if (recursive)
+    {
+        foreach (var subDir in dir.GetDirectories())
+        { 
+            var filename = FileIO.AppendPathSeparator(path + subDir.Name);
+               
+			//if (!FileIO.AppendPathSeparator(filename)) continue;
+			num += ScanPath(fs, extension, filename, basepath_length, recursive);
+        }
+    }
 
-	closedir(dir);
-
-	return num;
+    return num;
 }
 
 /**
@@ -1481,74 +1322,17 @@ static uint ScanPath(FileScanner *fs, const char *extension, const char *path, s
  * @param extension the extension of files to search for.
  * @param tar       the tar to search in.
  */
-static uint ScanTar(FileScanner *fs, const char *extension, TarFileList::iterator tar)
+public static uint ScanTar(FileScanner fs, string extension, KeyValuePair<string, TarFileListEntry> tar) //Dictionary<string, TarFileListEntry> 
 {
-	uint num = 0;
-	const char *filename = (*tar).first.c_str();
 
-	if (MatchesExtension(extension, filename) && fs.AddFile(filename, 0, (*tar).second.tar_filename)) num++;
+    uint num = 0;
+	var filename = tar.Key;
+
+    if (MatchesExtension(extension, filename) && fs.AddFile(filename, 0, tar.Value.tar_filename))
+    {
+        num++;
+    }
 
 	return num;
 }
 
-/**
- * Scan for files with the given extension in the given search path.
- * @param extension the extension of files to search for.
- * @param sd        the sub directory to search in.
- * @param tars      whether to search in the tars too.
- * @param recursive whether to search recursively
- * @return the number of found files, i.e. the number of times that
- *         AddFile returned true.
- */
-uint FileScanner::Scan(const char *extension, Subdirectory sd, bool tars, bool recursive)
-{
-	this.subdir = sd;
-
-	Searchpath sp;
-	char path[MAX_PATH];
-	TarFileList::iterator tar;
-	uint num = 0;
-
-	FOR_ALL_SEARCHPATHS(sp) {
-		/* Don't search in the working directory */
-		if (sp == SP_WORKING_DIR && !_do_scan_working_directory) continue;
-
-		FioAppendDirectory(path, lastof(path), sp, sd);
-		num += ScanPath(this, extension, path, strlen(path), recursive);
-	}
-
-	if (tars && sd != NO_DIRECTORY) {
-		FOR_ALL_TARS(tar, sd) {
-			num += ScanTar(this, extension, tar);
-		}
-	}
-
-	switch (sd) {
-		case BASESET_DIR:
-			num += this.Scan(extension, OLD_GM_DIR, tars, recursive);
-			/* FALL THROUGH */
-		case NEWGRF_DIR:
-			num += this.Scan(extension, OLD_DATA_DIR, tars, recursive);
-			break;
-
-		default: break;
-	}
-
-	return num;
-}
-
-/**
- * Scan for files with the given extension in the given search path.
- * @param extension the extension of files to search for.
- * @param directory the sub directory to search in.
- * @param recursive whether to search recursively
- * @return the number of found files, i.e. the number of times that
- *         AddFile returned true.
- */
-uint FileScanner::Scan(const char *extension, const char *directory, bool recursive)
-{
-	char path[MAX_PATH];
-	strecpy(path, directory, lastof(path));
-	if (!AppendPathSeparator(path, lastof(path))) return 0;
-	return ScanPath(this, extension, path, strlen(path), recursive);
-}

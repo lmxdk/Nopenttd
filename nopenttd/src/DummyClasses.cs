@@ -16,7 +16,9 @@ namespace Nopenttd.src
     };
 
     public struct Window
-    { }
+    {
+        public static string _windows_file;
+    }
 
 
 
@@ -42,4 +44,28 @@ namespace Nopenttd.src
             return s;
         }
     }
+
+
+
+    [Obsolete("Use DirectoryInfo.GetFiles()")]
+    public class dirent { }
+
+    public class gamelog
+    {
+        public static void GamelogPrint(Action<string> logMethod)
+        {
+            
+        }
+    }
+
+    public class Hotkeys
+    {
+        public static string _hotkeys_file;
+    }
+public class Dedicated
+    {
+        public static string _log_file;
+    }
+
+    
 }

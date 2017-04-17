@@ -9,117 +9,149 @@
 
 /** @file crashlog_win.cpp Implementation of a crashlogger for Windows */
 
-#include "../../stdafx.h"
-#include "../../crashlog.h"
-#include "win32.h"
-#include "../../core/alloc_func.hpp"
-#include "../../core/math_func.hpp"
-#include "../../string_func.h"
-#include "../../fileio_func.h"
-#include "../../strings_func.h"
-#include "../../gamelog.h"
-#include "../../saveload/saveload.h"
-#include "../../video/video_driver.hpp"
-
-#include <windows.h>
-#include <signal.h>
-
-#include "../../safeguards.h"
+using System;
+using System.Text;
+using Nopenttd;
 
 static const uint MAX_SYMBOL_LEN = 512;
 static const uint MAX_FRAMES     = 64;
 
 /* printf format specification for 32/64-bit addresses. */
-#ifdef _M_AMD64
-#define PRINTF_PTR "0x%016IX"
-#else
-#define PRINTF_PTR "0x%08X"
-#endif
 
 /**
  * Windows implementation for the crash logger.
  */
-class CrashLogWindows : public CrashLog {
+public class CrashLogWindows : CrashLog {
 	/** Information about the encountered exception */
-	EXCEPTION_POINTERS *ep;
+	Exception ep;
+	
+    protected override void LogOSVersion()
+    {
+        var os = Environment.OSVersion;
 
-	/* virtual */ char *LogOSVersion(char *buffer, const char *last) const;
-	/* virtual */ char *LogError(char *buffer, const char *last, const char *message) const;
-	/* virtual */ char *LogStacktrace(char *buffer, const char *last) const;
-	/* virtual */ char *LogRegisters(char *buffer, const char *last) const;
-	/* virtual */ char *LogModules(char *buffer, const char *last) const;
-public:
-#if defined(_MSC_VER)
-	/* virtual */ int WriteCrashDump(char *filename, const char *filename_last) const;
-	char *AppendDecodedStacktrace(char *buffer, const char *last) const;
-#else
-	char *AppendDecodedStacktrace(char *buffer, const char *last) const { return buffer; }
-#endif /* _MSC_VER */
+        gamelog_buffer.AppendLine(
+$@"Operating system:{Environment.NewLine}
+ Name:     Windows{Environment.NewLine}
+ Release:  {os.Version}");
+}
+
+    protected override void LogError(string message)
+    {
+        gamelog_buffer.AppendLine(
+$@"Crash reason:{Environment.NewLine}
+ Exception: {ep.GetType().Name}{Environment.NewLine}
+ Message:   {message ?? "<none>"}{Environment.NewLine}
+ Ex.Message:   {ep.Message}{Environment.NewLine}"
+ //StackTrace:   {ep.StackTrace}{Environment.NewLine}"
+    );
+}
+
+
+    protected override void LogStacktrace()
+{
+        gamelog_buffer.AppendLine("Stack trace:");
+		gamelog_buffer.AppendLine(ep.StackTrace);
+    gamelog_buffer.AppendLine();
+}
+
+    /* virtual */
+    protected override void LogModules()
+{
+
+    throw new NotImplementedException();
+		//TODO Implement
+//    BOOL(WINAPI* EnumProcessModules)(HANDLE, HMODULE*, DWORD, LPDWORD);
+
+//		gamelog_buffer.AppendLine("Module information:");
+
+//	if (LoadLibraryList((Function*)&EnumProcessModules, "psapi.dll\0EnumProcessModules\0\0")) {
+//		HMODULE modules[100];
+//    DWORD needed;
+//    BOOL res;
+
+//    HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
+//		if (proc != NULL) {
+//			res = EnumProcessModules(proc, modules, sizeof(modules), &needed);
+
+//            CloseHandle(proc);
+//			if (res) {
+//				size_t count = min(needed / sizeof(HMODULE), lengthof(modules));
+
+//				for (size_t i = 0; i != count; i++) output = PrintModuleInfo(output, last, modules[i]);
+//				return output + seprintf(output, last, "\n");
+//}
+//		}
+//	}
+//	output = PrintModuleInfo(output, last, NULL);
+//	return output + seprintf(output, last, "\n");
+}
+
+protected override void LogRegisters()
+    { 
+		throw new NotImplementedException();
+		//TODO implement
+//	buffer+= seprintf(buffer, last, "Registers:\n");
+//buffer += seprintf(buffer, last,
+//		" EAX: %.8X EBX: %.8X ECX: %.8X EDX: %.8X\n"
+//		" ESI: %.8X EDI: %.8X EBP: %.8X ESP: %.8X\n"
+//		" EIP: %.8X EFLAGS: %.8X\n",
+//    (int) ep.ContextRecord.Eax,
+//    (int) ep.ContextRecord.Ebx,
+//    (int) ep.ContextRecord.Ecx,
+//    (int) ep.ContextRecord.Edx,
+//    (int) ep.ContextRecord.Esi,
+//    (int) ep.ContextRecord.Edi,
+//    (int) ep.ContextRecord.Ebp,
+//    (int) ep.ContextRecord.Esp,
+//    (int) ep.ContextRecord.Eip,
+//    (int) ep.ContextRecord.EFlags
+//)
+
+//buffer += seprintf(buffer, last, "\n Bytes at instruction pointer:\n");
+//byte* b = (byte*)ep.ContextRecord.Eip;
+//	for (int i = 0; i != 24; i++) {
+//		if (IsBadReadPtr(b, 1)) {
+//			buffer += seprintf(buffer, last, " ??"); // OCR: WAS: , 0);
+//		} else {
+//			buffer += seprintf(buffer, last, " %.2X", * b);
+//		}
+//		b++;
+//	}
+//	return buffer + seprintf(buffer, last, "\n\n");
+}
+
+
+
+	public /* virtual */ int WriteCrashDump(string filename, const string filename_last) const;
+	public string AppendDecodedStacktrace();
 
 	/** Buffer for the generated crash log */
-	char crashlog[65536];
-	/** Buffer for the filename of the crash log */
-	char crashlog_filename[MAX_PATH];
-	/** Buffer for the filename of the crash dump */
-	char crashdump_filename[MAX_PATH];
-	/** Buffer for the filename of the crash screenshot */
-	char screenshot_filename[MAX_PATH];
+	public string crashlog;
+    /** Buffer for the filename of the crash log */
+    public string crashlog_filename;
+    /** Buffer for the filename of the crash dump */
+    string crashdump_filename;
+    /** Buffer for the filename of the crash screenshot */
+    string screenshot_filename;
 
 	/**
 	 * A crash log is always generated when it's generated.
 	 * @param ep the data related to the exception.
 	 */
-	CrashLogWindows(EXCEPTION_POINTERS *ep = NULL) :
-		ep(ep)
+	CrashLogWindows(Exception ep = null)
 	{
-		this->crashlog[0] = '\0';
-		this->crashlog_filename[0] = '\0';
-		this->crashdump_filename[0] = '\0';
-		this->screenshot_filename[0] = '\0';
+		this.ep = ep;
+		this.crashlog = null;
+		this.crashlog_filename = null;
+		this.crashdump_filename = null;
+		this.screenshot_filename = null;
 	}
 
 	/**
 	 * Points to the current crash log.
 	 */
-	static CrashLogWindows *current;
+	public static CrashLogWindows current = null;
 };
-
-/* static */ CrashLogWindows *CrashLogWindows::current = NULL;
-
-/* virtual */ char *CrashLogWindows::LogOSVersion(char *buffer, const char *last) const
-{
-	_OSVERSIONINFOA os;
-	os.dwOSVersionInfoSize = sizeof(os);
-	GetVersionExA(&os);
-
-	return buffer + seprintf(buffer, last,
-			"Operating system:\n"
-			" Name:     Windows\n"
-			" Release:  %d.%d.%d (%s)\n",
-			(int)os.dwMajorVersion,
-			(int)os.dwMinorVersion,
-			(int)os.dwBuildNumber,
-			os.szCSDVersion
-	);
-
-}
-
-/* virtual */ char *CrashLogWindows::LogError(char *buffer, const char *last, const char *message) const
-{
-	return buffer + seprintf(buffer, last,
-			"Crash reason:\n"
-			" Exception: %.8X\n"
-#ifdef _M_AMD64
-			" Location:  %.16IX\n"
-#else
-			" Location:  %.8X\n"
-#endif
-			" Message:   %s\n\n",
-			(int)ep->ExceptionRecord->ExceptionCode,
-			(size_t)ep->ExceptionRecord->ExceptionAddress,
-			message == NULL ? "<none>" : message
-	);
-}
 
 struct DebugFileInfo {
 	uint32 size;
@@ -129,22 +161,6 @@ struct DebugFileInfo {
 
 static uint32 *_crc_table;
 
-static void MakeCRCTable(uint32 *table)
-{
-	uint32 crc, poly = 0xEDB88320L;
-	int i;
-	int j;
-
-	_crc_table = table;
-
-	for (i = 0; i != 256; i++) {
-		crc = i;
-		for (j = 8; j != 0; j--) {
-			crc = (crc & 1 ? (crc >> 1) ^ poly : crc >> 1);
-		}
-		table[i] = crc;
-	}
-}
 
 static uint32 CalcCRC(byte *data, uint size, uint32 crc)
 {
@@ -154,7 +170,7 @@ static uint32 CalcCRC(byte *data, uint size, uint32 crc)
 	return crc;
 }
 
-static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
+static void GetFileInfo(DebugFileInfo *dfi, const Tstring filename)
 {
 	HANDLE file;
 	memset(dfi, 0, sizeof(*dfi));
@@ -174,18 +190,18 @@ static void GetFileInfo(DebugFileInfo *dfi, const TCHAR *filename)
 			filesize += numread;
 			crc = CalcCRC(buffer, numread, crc);
 		}
-		dfi->size = filesize;
-		dfi->crc32 = crc ^ (uint32)-1;
+		dfi.size = filesize;
+		dfi.crc32 = crc ^ (uint32)-1;
 
 		if (GetFileTime(file, NULL, NULL, &write_time)) {
-			FileTimeToSystemTime(&write_time, &dfi->file_time);
+			FileTimeToSystemTime(&write_time, &dfi.file_time);
 		}
 		CloseHandle(file);
 	}
 }
 
 
-static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
+static string PrintModuleInfo(string output, const string last, HMODULE mod)
 {
 	TCHAR buffer[MAX_PATH];
 	DebugFileInfo dfi;
@@ -207,143 +223,23 @@ static char *PrintModuleInfo(char *output, const char *last, HMODULE mod)
 	return output;
 }
 
-/* virtual */ char *CrashLogWindows::LogModules(char *output, const char *last) const
+private static readonly string[] dbg_import = new[] {
+        "dbghelp.dll"
+        ,"SymInitialize"
+        ,"SymSetOptions"
+        ,"SymCleanup"
+        ,"StackWalk64"
+        ,"SymFunctionTableAccess64"
+        ,"SymGetModuleBase64"
+        ,"SymGetModuleInfo64"
+        ,"SymGetSymFromAddr64"
+        ,"SymGetLineFromAddr64"
+        ,""};
+
+
+protected override string AppendDecodedStacktrace()
 {
-	MakeCRCTable(AllocaM(uint32, 256));
-	BOOL (WINAPI *EnumProcessModules)(HANDLE, HMODULE*, DWORD, LPDWORD);
-
-	output += seprintf(output, last, "Module information:\n");
-
-	if (LoadLibraryList((Function*)&EnumProcessModules, "psapi.dll\0EnumProcessModules\0\0")) {
-		HMODULE modules[100];
-		DWORD needed;
-		BOOL res;
-
-		HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, GetCurrentProcessId());
-		if (proc != NULL) {
-			res = EnumProcessModules(proc, modules, sizeof(modules), &needed);
-			CloseHandle(proc);
-			if (res) {
-				size_t count = min(needed / sizeof(HMODULE), lengthof(modules));
-
-				for (size_t i = 0; i != count; i++) output = PrintModuleInfo(output, last, modules[i]);
-				return output + seprintf(output, last, "\n");
-			}
-		}
-	}
-	output = PrintModuleInfo(output, last, NULL);
-	return output + seprintf(output, last, "\n");
-}
-
-/* virtual */ char *CrashLogWindows::LogRegisters(char *buffer, const char *last) const
-{
-	buffer += seprintf(buffer, last, "Registers:\n");
-#ifdef _M_AMD64
-	buffer += seprintf(buffer, last,
-		" RAX: %.16I64X RBX: %.16I64X RCX: %.16I64X RDX: %.16I64X\n"
-		" RSI: %.16I64X RDI: %.16I64X RBP: %.16I64X RSP: %.16I64X\n"
-		" R8:  %.16I64X R9:  %.16I64X R10: %.16I64X R11: %.16I64X\n"
-		" R12: %.16I64X R13: %.16I64X R14: %.16I64X R15: %.16I64X\n"
-		" RIP: %.16I64X EFLAGS: %.8lX\n",
-		ep->ContextRecord->Rax,
-		ep->ContextRecord->Rbx,
-		ep->ContextRecord->Rcx,
-		ep->ContextRecord->Rdx,
-		ep->ContextRecord->Rsi,
-		ep->ContextRecord->Rdi,
-		ep->ContextRecord->Rbp,
-		ep->ContextRecord->Rsp,
-		ep->ContextRecord->R8,
-		ep->ContextRecord->R9,
-		ep->ContextRecord->R10,
-		ep->ContextRecord->R11,
-		ep->ContextRecord->R12,
-		ep->ContextRecord->R13,
-		ep->ContextRecord->R14,
-		ep->ContextRecord->R15,
-		ep->ContextRecord->Rip,
-		ep->ContextRecord->EFlags
-	);
-#else
-	buffer += seprintf(buffer, last,
-		" EAX: %.8X EBX: %.8X ECX: %.8X EDX: %.8X\n"
-		" ESI: %.8X EDI: %.8X EBP: %.8X ESP: %.8X\n"
-		" EIP: %.8X EFLAGS: %.8X\n",
-		(int)ep->ContextRecord->Eax,
-		(int)ep->ContextRecord->Ebx,
-		(int)ep->ContextRecord->Ecx,
-		(int)ep->ContextRecord->Edx,
-		(int)ep->ContextRecord->Esi,
-		(int)ep->ContextRecord->Edi,
-		(int)ep->ContextRecord->Ebp,
-		(int)ep->ContextRecord->Esp,
-		(int)ep->ContextRecord->Eip,
-		(int)ep->ContextRecord->EFlags
-	);
-#endif
-
-	buffer += seprintf(buffer, last, "\n Bytes at instruction pointer:\n");
-#ifdef _M_AMD64
-	byte *b = (byte*)ep->ContextRecord->Rip;
-#else
-	byte *b = (byte*)ep->ContextRecord->Eip;
-#endif
-	for (int i = 0; i != 24; i++) {
-		if (IsBadReadPtr(b, 1)) {
-			buffer += seprintf(buffer, last, " ??"); // OCR: WAS: , 0);
-		} else {
-			buffer += seprintf(buffer, last, " %.2X", *b);
-		}
-		b++;
-	}
-	return buffer + seprintf(buffer, last, "\n\n");
-}
-
-/* virtual */ char *CrashLogWindows::LogStacktrace(char *buffer, const char *last) const
-{
-	buffer += seprintf(buffer, last, "Stack trace:\n");
-#ifdef _M_AMD64
-	uint32 *b = (uint32*)ep->ContextRecord->Rsp;
-#else
-	uint32 *b = (uint32*)ep->ContextRecord->Esp;
-#endif
-	for (int j = 0; j != 24; j++) {
-		for (int i = 0; i != 8; i++) {
-			if (IsBadReadPtr(b, sizeof(uint32))) {
-				buffer += seprintf(buffer, last, " ????????"); // OCR: WAS - , 0);
-			} else {
-				buffer += seprintf(buffer, last, " %.8X", *b);
-			}
-			b++;
-		}
-		buffer += seprintf(buffer, last, "\n");
-	}
-	return buffer + seprintf(buffer, last, "\n");
-}
-
-#if defined(_MSC_VER)
-#pragma warning(disable:4091)
-#include <dbghelp.h>
-#pragma warning(default:4091)
-
-char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) const
-{
-#define M(x) x "\0"
-	static const char dbg_import[] =
-		M("dbghelp.dll")
-		M("SymInitialize")
-		M("SymSetOptions")
-		M("SymCleanup")
-		M("StackWalk64")
-		M("SymFunctionTableAccess64")
-		M("SymGetModuleBase64")
-		M("SymGetModuleInfo64")
-		M("SymGetSymFromAddr64")
-		M("SymGetLineFromAddr64")
-		M("")
-		;
-#undef M
-
+	
 	struct ProcPtrs {
 		BOOL (WINAPI * pSymInitialize)(HANDLE, PCSTR, BOOL);
 		BOOL (WINAPI * pSymSetOptions)(DWORD);
@@ -369,36 +265,26 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 		/* Initialize starting stack frame from context record. */
 		STACKFRAME64 frame;
 		memset(&frame, 0, sizeof(frame));
-#ifdef _M_AMD64
-		frame.AddrPC.Offset = ep->ContextRecord->Rip;
-		frame.AddrFrame.Offset = ep->ContextRecord->Rbp;
-		frame.AddrStack.Offset = ep->ContextRecord->Rsp;
-#else
-		frame.AddrPC.Offset = ep->ContextRecord->Eip;
-		frame.AddrFrame.Offset = ep->ContextRecord->Ebp;
-		frame.AddrStack.Offset = ep->ContextRecord->Esp;
-#endif
+		frame.AddrPC.Offset = ep.ContextRecord.Eip;
+		frame.AddrFrame.Offset = ep.ContextRecord.Ebp;
+		frame.AddrStack.Offset = ep.ContextRecord.Esp;
 		frame.AddrPC.Mode = AddrModeFlat;
 		frame.AddrFrame.Mode = AddrModeFlat;
 		frame.AddrStack.Mode = AddrModeFlat;
 
 		/* Copy context record as StackWalk64 may modify it. */
 		CONTEXT ctx;
-		memcpy(&ctx, ep->ContextRecord, sizeof(ctx));
+		memcpy(&ctx, ep.ContextRecord, sizeof(ctx));
 
 		/* Allocate space for symbol info. */
 		IMAGEHLP_SYMBOL64 *sym_info = (IMAGEHLP_SYMBOL64*)alloca(sizeof(IMAGEHLP_SYMBOL64) + MAX_SYMBOL_LEN - 1);
-		sym_info->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-		sym_info->MaxNameLength = MAX_SYMBOL_LEN;
+		sym_info.SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+		sym_info.MaxNameLength = MAX_SYMBOL_LEN;
 
 		/* Walk stack at most MAX_FRAMES deep in case the stack is corrupt. */
 		for (uint num = 0; num < MAX_FRAMES; num++) {
 			if (!proc.pStackWalk64(
-#ifdef _M_AMD64
-				IMAGE_FILE_MACHINE_AMD64,
-#else
 				IMAGE_FILE_MACHINE_I386,
-#endif
 				hCur, GetCurrentThread(), &frame, &ctx, NULL, proc.pSymFunctionTableAccess64, proc.pSymGetModuleBase64, NULL)) break;
 
 			if (frame.AddrPC.Offset == frame.AddrReturn.Offset) {
@@ -421,7 +307,7 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 			/* Get symbol name and line info if possible. */
 			DWORD64 offset;
 			if (proc.pSymGetSymFromAddr64(hCur, frame.AddrPC.Offset, &offset, sym_info)) {
-				buffer += seprintf(buffer, last, " %s + %I64u", sym_info->Name, offset);
+				buffer += seprintf(buffer, last, " %s + %I64u", sym_info.Name, offset);
 
 				DWORD line_offs;
 				IMAGEHLP_LINE64 line;
@@ -460,8 +346,8 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 			MINIDUMP_USER_STREAM_INFORMATION musi;
 
 			userstream.Type        = LastReservedStream + 1;
-			userstream.Buffer      = (void*)this->crashlog;
-			userstream.BufferSize  = (ULONG)strlen(this->crashlog) + 1;
+			userstream.Buffer      = (void*)this.crashlog;
+			userstream.BufferSize  = (ULONG)strlen(this.crashlog) + 1;
 
 			musi.UserStreamCount   = 1;
 			musi.UserStreamArray   = &userstream;
@@ -479,7 +365,6 @@ char *CrashLogWindows::AppendDecodedStacktrace(char *buffer, const char *last) c
 	}
 	return ret;
 }
-#endif /* _MSC_VER */
 
 extern bool CloseConsoleLogIfActive();
 static void ShowCrashlogWindow();
@@ -516,23 +401,18 @@ static LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS *ep)
 
 	CrashLogWindows *log = new CrashLogWindows(ep);
 	CrashLogWindows::current = log;
-	char *buf = log->FillCrashLog(log->crashlog, lastof(log->crashlog));
-	log->WriteCrashDump(log->crashdump_filename, lastof(log->crashdump_filename));
-	log->AppendDecodedStacktrace(buf, lastof(log->crashlog));
-	log->WriteCrashLog(log->crashlog, log->crashlog_filename, lastof(log->crashlog_filename));
-	log->WriteScreenshot(log->screenshot_filename, lastof(log->screenshot_filename));
+	char *buf = log.FillCrashLog(log.crashlog, lastof(log.crashlog));
+	log.WriteCrashDump(log.crashdump_filename, lastof(log.crashdump_filename));
+	log.AppendDecodedStacktrace(buf, lastof(log.crashlog));
+	log.WriteCrashLog(log.crashlog, log.crashlog_filename, lastof(log.crashlog_filename));
+	log.WriteScreenshot(log.screenshot_filename, lastof(log.screenshot_filename));
 
 	/* Close any possible log files */
 	CloseConsoleLogIfActive();
 
-	if ((VideoDriver::GetInstance() == NULL || VideoDriver::GetInstance()->HasGUI()) && _safe_esp != NULL) {
-#ifdef _M_AMD64
-		ep->ContextRecord->Rip = (DWORD64)ShowCrashlogWindow;
-		ep->ContextRecord->Rsp = (DWORD64)_safe_esp;
-#else
-		ep->ContextRecord->Eip = (DWORD)ShowCrashlogWindow;
-		ep->ContextRecord->Esp = (DWORD)_safe_esp;
-#endif
+	if ((VideoDriver::GetInstance() == NULL || VideoDriver::GetInstance().HasGUI()) && _safe_esp != NULL) {
+		ep.ContextRecord.Eip = (DWORD)ShowCrashlogWindow;
+		ep.ContextRecord.Esp = (DWORD)_safe_esp;
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
 
@@ -547,31 +427,14 @@ static void CDECL CustomAbort(int signal)
 
 /* static */ void CrashLog::InitialiseCrashLog()
 {
-#ifdef _M_AMD64
-	CONTEXT ctx;
-	RtlCaptureContext(&ctx);
-
-	/* The stack pointer for AMD64 must always be 16-byte aligned inside a
-	 * function. As we are simulating a function call with the safe ESP value,
-	 * we need to subtract 8 for the imaginary return address otherwise stack
-	 * alignment would be wrong in the called function. */
-	_safe_esp = (void *)(ctx.Rsp - 8);
-#else
-#if defined(_MSC_VER)
 	_asm {
 		mov _safe_esp, esp
 	}
-#else
-	asm("movl %esp, __safe_esp");
-#endif
-#endif
 
 	/* SIGABRT is not an unhandled exception, so we need to intercept it. */
 	signal(SIGABRT, CustomAbort);
-#if defined(_MSC_VER)
 	/* Don't show abort message as we will get the crashlog window anyway. */
 	_set_abort_behavior(0, _WRITE_ABORT_MSG);
-#endif
 	SetUnhandledExceptionFilter(ExceptionHandler);
 }
 
@@ -625,10 +488,10 @@ static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARA
 		case WM_INITDIALOG: {
 			/* We need to put the crash-log in a separate buffer because the default
 			 * buffer in MB_TO_WIDE is not large enough (512 chars) */
-			TCHAR crash_msgW[lengthof(CrashLogWindows::current->crashlog)];
-			/* Convert unix -> dos newlines because the edit box only supports that properly :( */
-			const char *unix_nl = CrashLogWindows::current->crashlog;
-			char dos_nl[lengthof(CrashLogWindows::current->crashlog)];
+			TCHAR crash_msgW[lengthof(CrashLogWindows::current.crashlog)];
+			/* Convert unix . dos newlines because the edit box only supports that properly :( */
+			const char *unix_nl = CrashLogWindows::current.crashlog;
+			char dos_nl[lengthof(CrashLogWindows::current.crashlog)];
 			char *p = dos_nl;
 			WChar c;
 			while ((c = Utf8Consume(&unix_nl)) && p < lastof(dos_nl) - 4) { // 4 is max number of bytes per character
@@ -639,19 +502,19 @@ static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARA
 
 			/* Add path to crash.log and crash.dmp (if any) to the crash window text */
 			size_t len = _tcslen(_crash_desc) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->crashlog_filename)) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->crashdump_filename)) + 2;
-			len += _tcslen(OTTD2FS(CrashLogWindows::current->screenshot_filename)) + 1;
+			len += _tcslen(OTTD2FS(CrashLogWindows::current.crashlog_filename)) + 2;
+			len += _tcslen(OTTD2FS(CrashLogWindows::current.crashdump_filename)) + 2;
+			len += _tcslen(OTTD2FS(CrashLogWindows::current.screenshot_filename)) + 1;
 
 			TCHAR *text = AllocaM(TCHAR, len);
-			_sntprintf(text, len, _crash_desc, OTTD2FS(CrashLogWindows::current->crashlog_filename));
-			if (OTTD2FS(CrashLogWindows::current->crashdump_filename)[0] != _T('\0')) {
+			_sntprintf(text, len, _crash_desc, OTTD2FS(CrashLogWindows::current.crashlog_filename));
+			if (OTTD2FS(CrashLogWindows::current.crashdump_filename)[0] != _T('\0')) {
 				_tcscat(text, _T("\n"));
-				_tcscat(text, OTTD2FS(CrashLogWindows::current->crashdump_filename));
+				_tcscat(text, OTTD2FS(CrashLogWindows::current.crashdump_filename));
 			}
-			if (OTTD2FS(CrashLogWindows::current->screenshot_filename)[0] != _T('\0')) {
+			if (OTTD2FS(CrashLogWindows::current.screenshot_filename)[0] != _T('\0')) {
 				_tcscat(text, _T("\n"));
-				_tcscat(text, OTTD2FS(CrashLogWindows::current->screenshot_filename));
+				_tcscat(text, OTTD2FS(CrashLogWindows::current.screenshot_filename));
 			}
 
 			SetDlgItemText(wnd, 10, text);
@@ -666,7 +529,7 @@ static INT_PTR CALLBACK CrashDialogFunc(HWND wnd, UINT msg, WPARAM wParam, LPARA
 					ExitProcess(2);
 				case 13: // Emergency save
 					char filename[MAX_PATH];
-					if (CrashLogWindows::current->WriteSavegame(filename, lastof(filename))) {
+					if (CrashLogWindows::current.WriteSavegame(filename, lastof(filename))) {
 						size_t len = _tcslen(_save_succeeded) + _tcslen(OTTD2FS(filename)) + 1;
 						TCHAR *text = AllocaM(TCHAR, len);
 						_sntprintf(text, len, _save_succeeded, OTTD2FS(filename));

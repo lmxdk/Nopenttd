@@ -51,18 +51,85 @@ namespace Nopenttd
 /** Helper for scanning for files with a given name */
 public abstract class FileScanner {
 	protected Subdirectory subdir; ///< The current sub directory we are searching through
-public uint Scan(const char *extension, Subdirectory sd, bool tars = true, bool recursive = true);
-	public uint Scan(const char *extension, const char *directory, bool recursive = true);
 
-	/**
-	 * Add a file with the given filename.
-	 * @param filename        the full path to the file to read
-	 * @param basepath_length amount of characters to chop of before to get a
-	 *                        filename relative to the search path.
-	 * @param tar_filename    the name of the tar file the file is read from.
-	 * @return true if the file is added.
-	 */
-	public abstract bool AddFile(const char *filename, size_t basepath_length, const char *tar_filename);
+
+        /**
+ * Scan for files with the given extension in the given search path.
+ * @param extension the extension of files to search for.
+ * @param sd        the sub directory to search in.
+ * @param tars      whether to search in the tars too.
+ * @param recursive whether to search recursively
+ * @return the number of found files, i.e. the number of times that
+ *         AddFile returned true.
+ */
+        public uint Scan(string extension, Subdirectory sd, bool tars, bool recursive)
+{
+	this.subdir = sd;
+
+	Searchpath sp;
+        TarFileList::iterator tar;
+        uint num = 0;
+
+
+        foreach (var sp in FileIO.FOR_ALL_SEARCHPATHS())
+        {
+            /* Don't search in the working directory */
+            if (sp == Searchpath.SP_WORKING_DIR && !FileIO._do_scan_working_directory) continue;
+
+            var path = FileIO.FioAppendDirectory(sp, sd);
+            num += ScanPath(this, extension, path, recursive);
+        }
+
+	if (tars && sd != Subdirectory.NO_DIRECTORY) {
+
+        FOR_ALL_TARS(tar, sd)
+        {
+            num += ScanTar(this, extension, tar);
+        }
+    }
+
+	switch (sd) {
+		case BASESET_DIR:
+			num += this.Scan(extension, OLD_GM_DIR, tars, recursive);
+			/* FALL THROUGH */
+		case NEWGRF_DIR:
+
+            num += this.Scan(extension, OLD_DATA_DIR, tars, recursive);
+			break;
+
+		default: break;
+
+    }
+
+	return num;
+}
+
+/**
+ * Scan for files with the given extension in the given search path.
+ * @param extension the extension of files to search for.
+ * @param directory the sub directory to search in.
+ * @param recursive whether to search recursively
+ * @return the number of found files, i.e. the number of times that
+ *         AddFile returned true.
+ */
+uint FileScanner::Scan(const char* extension, const char* directory, bool recursive)
+{
+    char path[MAX_PATH];
+    strecpy(path, directory, lastof(path));
+    if (!AppendPathSeparator(path, lastof(path))) return 0;
+    return ScanPath(this, extension, path, strlen(path), recursive);
+}
+
+
+/**
+ * Add a file with the given filename.
+ * @param filename        the full path to the file to read
+ * @param basepath_length amount of characters to chop of before to get a
+ *                        filename relative to the search path.
+ * @param tar_filename    the name of the tar file the file is read from.
+ * @return true if the file is added.
+ */
+public abstract bool AddFile(string filename, int basepath_length, string tar_filename);
 }
 
     /** The mode of tar scanning. */
