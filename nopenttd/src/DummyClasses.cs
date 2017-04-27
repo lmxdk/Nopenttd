@@ -67,5 +67,13 @@ public class Dedicated
         public static string _log_file;
     }
 
+    public class str
+    {
+        public static void str_validate(string str, StringValidationSettings settings = StringValidationSettings.SVS_NONE)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     
 }

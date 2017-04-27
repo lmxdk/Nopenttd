@@ -62,7 +62,11 @@
     <Compile Include="src\Core\StringList.cs" />
     <Compile Include="src\DummyClasses.cs" />
     <Compile Include="src\fileio.cs" />
+    <Compile Include="src\FileList.cs" />
+    <Compile Include="src\FileScanner.cs" />
+    <Compile Include="src\FiosFileScanner.cs" />
     <Compile Include="src\news_type.cs" />
+    <Compile Include="src\ScenarioScanner.cs" />
     <Compile Include="src\Settings\Settings.cs" />
     <Compile Include="src\SharedState.cs" />
     <Compile Include="src\Slopes\Corner.cs" />
@@ -70,6 +74,7 @@
     <Compile Include="src\Slopes\SlopeConstants.cs" />
     <Compile Include="src\station_type.cs" />
     <Compile Include="src\story_type.cs" />
+    <Compile Include="src\TarScanner.cs" />
     <Compile Include="src\Tiles\LevelMode.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
     <Compile Include="src\Tiles\TileExtended.cs" />
@@ -240,9 +245,6 @@
     <Compile Include="src\ini_type.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="src\fileio_func.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="src\os\windows\win32.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -250,6 +252,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\os\windows\crashlog_win.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\fios.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

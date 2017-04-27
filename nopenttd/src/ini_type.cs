@@ -95,7 +95,7 @@ public class IniGroup
         /// the last item in the group 
 
         /// name of group 
-        readonly string name;
+        public readonly string name;
 
         /// comment for group 
         public string comment;
@@ -380,7 +380,7 @@ public void LoadFromDisk(string filename, Subdirectory subdir)
  * @param size [out] Size of the opened file.
  * @return File handle of the opened file, or \c NULL.
  */
-abstract FILE* OpenFile(string filename, Subdirectory subdir, int* size);
+public abstract FileStream OpenFile(string filename, Subdirectory subdir, out long size);
 
         /**
          * Report an error about the file contents.
@@ -388,7 +388,7 @@ abstract FILE* OpenFile(string filename, Subdirectory subdir, int* size);
          * @param buffer Part of the file with the error.
          * @param post   Suffix text of the \a buffer part.
          */
-        abstract void ReportFileError(string pre, string buffer, string post);
+        public abstract void ReportFileError(string pre, string buffer, string post);
     };
 
 /** Ini file that supports both loading and saving. */
@@ -404,8 +404,20 @@ abstract FILE* OpenFile(string filename, Subdirectory subdir, int* size);
         {
             
         }
-        virtual FILE* OpenFile(string filename, Subdirectory subdir, size_t* size);
-        virtual void ReportFileError(string pre, string buffer, string post);
+
+        public override FileStream OpenFile(string filename, Subdirectory subdir, out long size)
+        {
+
+            /* Open the text file in binary mode to prevent end-of-line translations
+             * done by ftell() and friends, as defined by K&R. */
+            return FileIO.FioFOpenFile(filename, FileMode.Open, subdir, out size);
+        }
+
+        public override void ReportFileError(string pre, string buffer, string post)
+        {
+            throw new NotImplementedException();
+            //ShowInfoF("%s%s%s", pre, buffer, post);
+        }
 
 
 		
@@ -475,20 +487,7 @@ abstract FILE* OpenFile(string filename, Subdirectory subdir, int* size);
 
 	return true;
 }
-
-/* virtual */
-FILE* IniFile::OpenFile(const char* filename, Subdirectory subdir, size_t* size)
-{
-    /* Open the text file in binary mode to prevent end-of-line translations
-	 * done by ftell() and friends, as defined by K&R. */
-    return FioFOpenFile(filename, "rb", subdir, size);
-}
-
-/* virtual */
-void IniFile::ReportFileError(const char* const pre, const char* const buffer, const char* const post)
-{
-    ShowInfoF("%s%s%s", pre, buffer, post);
-}
+      
 
     }
 

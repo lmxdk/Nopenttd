@@ -193,31 +193,33 @@ public static DirectoryInfo opendir(string path)
     return dir.Exists == false ? null : dir;
 }
         
-public bool FiosIsRoot(string file)
+public static bool FiosIsRoot(string file)
 {
     return new DirectoryInfo(file).Parent == null;
 }
 
-public void FiosGetDrives(FileList &file_list)
+public static void FiosGetDrives(FileList file_list)
 {
     var drives = DriveInfo.GetDrives();
 	        
 	foreach (var drive in drives)
     {
-		FiosItem *fios = file_list.Append();
-		fios->type = FIOS_TYPE_DRIVE;
-		fios->mtime = 0;
-        fios->name = drive.Name;
-		fios->title = drive.Name;
+        var fios = new FiosItem();
+		fios.type = FiosType.FIOS_TYPE_DRIVE;
+		fios.mtime = 0;
+        fios.name = drive.Name;
+		fios.title = drive.Name;
+                file_list.Add(fios);
 	}
 }
 
-public bool FiosIsValidFile(FileInfo file)
-{	            
-	return file.Exists;
-}
+        [Obsolete("Use exists directly")]
+public static bool FiosIsValidFile(FileSystemInfo path)
+        {
+            return path.Exists;
+        }
 
-public bool FiosIsHiddenFile(FileInfo file)
+public static bool FiosIsHiddenFile(FileSystemInfo file)
 {
 	return file.Attributes.HasFlag(FileAttributes.Hidden | FileAttributes.System);
 }
