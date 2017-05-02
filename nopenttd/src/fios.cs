@@ -339,7 +339,7 @@ enum SortingBits {
             file_list.files.Sort(sort_start, file_list.files.Count - sort_start, CompareFiosItems);
 
             /* Show drives */
-            FiosGetDrives(file_list);
+            Win32.FiosGetDrives(file_list);
         }
 
 
@@ -381,7 +381,7 @@ enum SortingBits {
          * @see FiosGetFileList
          * @see FiosGetSavegameList
          */
-        (FiosType type, string title) FiosGetSavegameListCallback(SaveLoadOperation fop, string file, string ext, string title)
+        (FiosType type, string title) FiosGetSavegameListCallback(SaveLoadOperation fop, string file, string ext)
         {
             /* Show savegame files
              * .SAV OpenTTD saved game
@@ -391,25 +391,20 @@ enum SortingBits {
 
             /* Don't crash if we supply no extension */
             if (ext == null) return (FiosType.FIOS_TYPE_INVALID, null);
-
             if (string.Equals(ext, ".sav", StringComparison.CurrentCultureIgnoreCase)) {
 
-                title = GetFileTitle(file, Subdirectory.SAVE_DIR);
+                var title = GetFileTitle(file, Subdirectory.SAVE_DIR);
                 return (FiosType.FIOS_TYPE_FILE, title);
             }
 
             if (fop == SaveLoadOperation.SLO_LOAD) {
                 if (string.Equals(ext, ".ss1", StringComparison.CurrentCultureIgnoreCase) || string.Equals(ext, ".sv1", StringComparison.CurrentCultureIgnoreCase) ||
                     string.Equals(ext, ".sv2", StringComparison.CurrentCultureIgnoreCase)) {
-                    if (title != null)
-                    {
-                        title = GetOldSaveGameName(file);
-                    }
-                    return (FiosType.FIOS_TYPE_OLDFILE, title);
+                    return (FiosType.FIOS_TYPE_OLDFILE, null);
                 }
             }
 
-            return (FiosType.FIOS_TYPE_INVALID, title);
+            return (FiosType.FIOS_TYPE_INVALID, null);
         }
 
 
@@ -624,6 +619,7 @@ enum SortingBits {
         }
 
         void ShowSaveLoadDialog(AbstractFileType abstract_filetype, SaveLoadOperation fop);
+
 
 
         void FiosMakeSavegameName(char*buf,  const char* name,  const char* last);

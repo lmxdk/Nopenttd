@@ -74,6 +74,8 @@
     <Compile Include="src\Slopes\SlopeConstants.cs" />
     <Compile Include="src\station_type.cs" />
     <Compile Include="src\story_type.cs" />
+    <Compile Include="src\StringParameters.cs" />
+    <Compile Include="src\StringTokenBuilder.cs" />
     <Compile Include="src\TarScanner.cs" />
     <Compile Include="src\Tiles\LevelMode.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
@@ -255,6 +257,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\fios.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\language.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\strings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\table\control_codes.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

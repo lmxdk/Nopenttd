@@ -38,7 +38,7 @@ namespace Nopenttd
 */
 public class ScenarioScanner : FileScanner {//, public SmallVector<ScenarioIdentifier, 8> {
 
-    private static readonly ILogger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType.FullName);.
+    private static readonly ILogger Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType.FullName);
         /// Whether we've already scanned
         bool scanned = false;
         public List<ScenarioIdentifier> items = new List<ScenarioIdentifier>();
