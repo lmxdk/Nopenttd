@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Nopenttd.Core;
@@ -130,10 +131,6 @@ static char *GetSpecialTownNameString(StringBuilder buff, int ind, uint32 seed);
 static char *GetSpecialNameString(StringBuilder buff, int ind, StringParameters *args);
 
 static char *FormatString(StringBuilder buff, const char *str, StringParameters *args, uint case_index = 0, bool game_script = false, bool dry_run = false);
-
-struct LanguagePack : public LanguagePackHeader {
-	char data[]; // list of strings
-};
 
 static char **_langpack_offs;
 static LanguagePack *_langpack;
@@ -372,8 +369,8 @@ static void FormatYmdString(StringBuilder buff, Date date, uint case_index)
 	ConvertDateToYMD(date, &ymd);
 
 	long args[] = {ymd.day + STR_DAY_NUMBER_1ST - 1, STR_MONTH_ABBREV_JAN + ymd.month, ymd.year};
-	StringParameters tmp_params(args);
-	FormatString(buff, GetStringPtr(STR_FORMAT_DATE_LONG), &tmp_params, case_index);
+	var tmp_params = new StringParameters(args);
+	FormatString(buff, GetStringPtr(STR_FORMAT_DATE_LONG), tmp_params, case_index);
 }
 
 static void FormatMonthAndYear(StringBuilder buff, Date date, uint case_index)
@@ -382,8 +379,8 @@ static void FormatMonthAndYear(StringBuilder buff, Date date, uint case_index)
 	ConvertDateToYMD(date, &ymd);
 
 	long args[] = {STR_MONTH_JAN + ymd.month, ymd.year};
-	StringParameters tmp_params(args);
-	FormatString(buff, GetStringPtr(STR_FORMAT_DATE_SHORT), &tmp_params, case_index);
+	var tmp_params = new StringParameters(args);
+	FormatString(buff, GetStringPtr(STR_FORMAT_DATE_SHORT), tmp_params, case_index);
 }
 
 static void FormatTinyOrISODate(StringBuilder buff, Date date, StringID str)
@@ -398,8 +395,8 @@ static void FormatTinyOrISODate(StringBuilder buff, Date date, StringID str)
 	seprintf(monthof(month), "%02i", ymd.month + 1);
 
 	long args[] = {(long)(size_t)day, (long)(size_t)month, ymd.year};
-	StringParameters tmp_params(args);
-	FormatString(buff, GetStringPtr(str), &tmp_params);
+	var tmp_params = new StringParameters(args);
+	FormatString(buff, GetStringPtr(str), tmp_params);
 }
 
 static void FormatGenericCurrency(StringBuilder buff, CurrencySpec spec, Money number, bool compact)
@@ -413,7 +410,7 @@ static void FormatGenericCurrency(StringBuilder buff, CurrencySpec spec, Money n
 
 	/* convert from negative */
 	if (number < 0) {		
-		buff.Append(StringControlCode.SCC_RED);
+		buff.AppendAsUtfChar((int)StringControlCode.SCC_RED);
 		buff.Append("-");
 		number = -number;
 	}
@@ -458,7 +455,7 @@ static void FormatGenericCurrency(StringBuilder buff, CurrencySpec spec, Money n
     }
 
 	if (negative) {
-		buff.Append(StringControlCode.SCC_PREVIOUS_COLOUR);
+		buff.AppendAsUtfChar((int)StringControlCode.SCC_PREVIOUS_COLOUR);
 	}
 }
 
@@ -757,7 +754,7 @@ public  enum ReadIntState
             TrailingWhiteSpace
         }
 
-        private long ReadHexInt(StringEnumerator enumerator)
+        private long ReadHexInt(IndexedString enumerator)
         {
             //tries to mimic c style strtol
 
@@ -883,13 +880,12 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 
 	uint next_substr_case_index = 0;
 	//char *buf_start = buff;
-    var str_stack = new Stack<StringEnumerator>();
+    var str_stack = new Stack<IndexedString>();
 	str_stack.Push(new StringEnumerator(str_arg));
-    var paramBuilder = new StringBuilder();
 
 	for (;;)
 	{
-	    StringEnumerator str;
+	    IndexedString str;
 		while (str_stack.Any())
 		{	
 			str = str_stack.Peek();
@@ -906,7 +902,7 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 	    {
 	        break;
 	    }
-	    var b = str.Current;
+	    var b = str.ConsumeUtfChar();
 
 		if (StringControlCode.SCC_NEWGRF_FIRST <= b && b <= StringControlCode.SCC_NEWGRF_LAST) {
 			/* We need to pass some stuff as it might be modified; oh boy. */
@@ -924,36 +920,34 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 
 				sub_args.ClearTypeInformation();
 
-			    var s = new StringEnumerator(str);
-			    var p = new StringEnumerator(str);
+			    var s = str.Clone();
+			    var p = str.Clone();
                 var stringid = ReadHexInt(p);
 			    
 				if (p.HasContent == false || (p.Current != ':' && p.Current != '\0'))
 				{
 				    p.SkipUntil('\0');
-				    str.Apply(p);
+				    str.Index = p.Index;
 					buff.Append("(invalid SCC_ENCODED)");
 					break;
 				}
 				if (stringid >= Language.TAB_SIZE)
 				{				    
-				    pp.SkipUntil('\0');
-				    str.Apply(p);
-					buff.Append("(invalid StringID)");
+				    p.SkipUntil('\0');
+				    str.Index = p.Index;
+                    buff.Append("(invalid StringID)");
 					break;
 				}
 
 			    int i = 0;
 				while (p.HasContent && p.Current != '\0' && i < 20) {
 					ulong param;
-				    s.Apply(p);
+				    s.Index = p.Index;
 					/* Find the next value */
 					bool instring = false;
 					bool escape = false;
-				    paramBuilder.Clear();
 					for (;p.HasContent;p.MoveNext())
 					{
-					    paramBuilder.Append(p.Current);
 						if (p.Current == '\\') {
 							escape = true;
 							continue;
@@ -984,15 +978,15 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 
 					if (s.Current != '"') {
 						/* Check if we want to look up another string */
-						var l = s.Current;					    
+						var l = s.DecodeUtfChar();					    
 						bool lookup = (l == StringControlCode.SCC_ENCODED);
-					    param = ReadHexInt(s, lookup);
+					    param = ReadHexInt(s);
 
 						if (lookup) {
 							if (param >= Language.TAB_SIZE)
 							{
 							    p.SkipUntil('\0');
-							    str.Apply(p);
+							    str.Index = p.Index;
 								buff.Append("(invalid sub-StringID)");
 								break;
 							}
@@ -1002,21 +996,21 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 						sub_args.SetParam(i++, param);
 					} else
 					{
-					    var g = paramBuilder.ToString();
+					    var g = str.Text.Substring(s.Index, p.Index - s.Index - 1);
 						sub_args.SetParam(i++, (ulong)g);
 					}
 				}
 				/* If we didn't error out, we can actually print the string. */
 				if (str.HasContent && str.Current != '\0')
 				{
-				    str.Apply(p);
+				    str.Index = p.Index;
 				    GetStringWithArgs(buff, MakeStringID(Language.TEXT_TAB_GAMESCRIPT_START, stringid), sub_args, true);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_NEWGRF_STRINL: {
-				StringID substr = (StringID)(ushort)str.Current;
+				StringID substr = (StringID)(ushort)str.ConsumeUtfChar();
 				str.MoveNext();
 				str_stack.Push(GetStringPtr(substr));
 				break;
@@ -1040,7 +1034,7 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 					/* Now we need to figure out what text to resolve, i.e.
 					 * what do we need to draw? So get the actual raw string
 					 * first using the control code to get said string. */
-					var input = args.GetTypeAtOffset(offset));
+					var input = args.GetTypeAtOffset(offset)); //utf8encode
 
 					/* Now do the string formatting. */
 				    var buf = new StringBuilder();
@@ -1051,7 +1045,7 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 					_scan_for_gender_data = old_sgd;
 
 					/* And determine the string. */
-				    var c = buf[0];
+				    var c = buf[0]; //Utf8Consume
 					/* Does this string have a gender, if so, set it */
 				    if (c == StringControlCode.SCC_GENDER_INDEX)
 				    {
@@ -1067,7 +1061,7 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 			case StringControlCode.SCC_GENDER_INDEX: // {GENDER 0}
 			    if (_scan_for_gender_data)
 			    {
-			        buff.Append(StringControlCode.SCC_GENDER_INDEX);
+			        buff.AppendAsUtfChar((int)StringControlCode.SCC_GENDER_INDEX);
 			        buff.Append(str.Current);
 			    }
 			    str.MoveNext();
@@ -1109,12 +1103,9 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 						str.MoveNext(3);
 						break;
 					}
+				    var i = str.Index;
 					/* Otherwise skip to the next case */
-				    str.MoveNext();
-				    var one = str.Current;
-				    str.MoveNext();
-				    var two = str.Current;
-					str.MoveNext(1 + (one << 8) + two);
+				    str.MoveNext(3 + (str.Text[1+i] << 8) + str.Text[2+i];
 					num--;
 				}
 				break;
@@ -1198,9 +1189,9 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 				 * param 1: cargo type
 				 * param 2: cargo count */
 				CargoID cargo = args.GetInt32(StringControlCode.SCC_CARGO_TINY);
-				if (cargo >= CargoSpec::GetArraySize()) break;
+				if (cargo >= CargoSpec.GetArraySize()) break;
 
-				StringID cargo_str = CargoSpec::Get(cargo).units_volume;
+				StringID cargo_str = CargoSpec.Get(cargo).units_volume;
 				long amount = 0;
 				switch (cargo_str) {
 					case STR_TONS:
@@ -1226,13 +1217,13 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 				 * param 1: cargo type
 				 * param 2: cargo count */
 				CargoID cargo = args.GetInt32(StringControlCode.SCC_CARGO_SHORT);
-				if (cargo >= CargoSpec::GetArraySize()) break;
+				if (cargo >= CargoSpec.GetArraySize()) break;
 
-				StringID cargo_str = CargoSpec::Get(cargo).units_volume;
+				StringID cargo_str = CargoSpec.Get(cargo).units_volume;
 				switch (cargo_str) {
 					case STR_TONS: {
 						Debug.Assert(_settings_game.locale.units_weight < _units_weight.Length));
-						long args_array[] = {_units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong())};
+						var args_array = new long[] {_units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong())};
 						var tmp_params = new StringParameters(args_array);
 						FormatString(buff, GetStringPtr(_units_weight[_settings_game.locale.units_weight].l), tmp_params);
 						break;
@@ -1240,7 +1231,7 @@ public static FormatString(StringBuilder buff, string str_arg, StringParameters 
 
 					case STR_LITERS: {
 					    Debug.Assert(_settings_game.locale.units_volume < _units_volume.Length);
-						long args_array[] = {_units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong())};
+						var args_array = new long[] {_units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong())};
 var tmp_params = new StringParameters(args_array);
 
                         FormatString(buff, GetStringPtr(_units_volume[_settings_game.locale.units_volume].l), tmp_params);
@@ -1249,7 +1240,7 @@ var tmp_params = new StringParameters(args_array);
 
 					default: {
 						var tmp_params = new StringParameters(args, 1);
-						 GetStringWithArgs(buff, cargo_str, &tmp_params);
+						 GetStringWithArgs(buff, cargo_str, tmp_params);
 						break;
 					}
 				}
@@ -1259,23 +1250,24 @@ var tmp_params = new StringParameters(args_array);
 			case StringControlCode.SCC_CARGO_LONG: { // {CARGO_LONG}
 				/* First parameter is cargo type, second parameter is cargo count */
 				CargoID cargo = args.GetInt32(StringControlCode.SCC_CARGO_LONG);
-				if (cargo != CT_INVALID && cargo >= CargoSpec::GetArraySize()) break;
+				if (cargo != CargoTypes.CT_INVALID && cargo >= CargoSpec.GetArraySize()) break;
 
-				StringID cargo_str = (cargo == CT_INVALID) ? STR_QUANTITY_N_A : CargoSpec::Get(cargo).quantifier;
+				StringID cargo_str = (cargo == CargoTypes.CT_INVALID) ? STR_QUANTITY_N_A : CargoSpec.Get(cargo).quantifier;
 				var tmp_args = new StringParameters(args, 1);
 				GetStringWithArgs(buff, cargo_str, &tmp_args);
 				break;
 			}
 
 			case StringControlCode.SCC_CARGO_LIST: { // {CARGO_LIST}
-				uint32 cmask = args.GetInt32(StringControlCode.SCC_CARGO_LIST);
+				uint cmask = args.GetInt32(StringControlCode.SCC_CARGO_LIST);
 				bool first = true;
 
-				const CargoSpec *cs;
-				FOR_ALL_SORTED_CARGOSPECS(cs) {
+			    for (var index = 0; index<_sorted_cargo_specs_size; index++)
+			    {
+			        var cs = _sorted_cargo_specs[index];
 					if (!BitMath.HasBit(cmask, cs.Index())) continue;
 
-					if (buff >= last - 2) break; // ',' and ' '
+					//if (buff >= last - 2) break; // ',' and ' '
 
 					if (first) {
 						first = false;
@@ -1288,130 +1280,141 @@ var tmp_params = new StringParameters(args_array);
 				}
 
 				/* If first is still true then no cargo is accepted */
-				if (first) buff = GetStringWithArgs(buff, STR_JUST_NOTHING, args, next_substr_case_index, game_script);
+			    if (first)
+			    {
+			        GetStringWithArgs(buff, STR_JUST_NOTHING, args, next_substr_case_index, game_script);
+			    }
 
-				*buff = '\0';
+				//*buff = '\0';
 				next_substr_case_index = 0;
 
-				/* Make sure we detect any buffer overflow */
-				assert(buff < last);
 				break;
 			}
 
 			case StringControlCode.SCC_CURRENCY_SHORT: // {CURRENCY_SHORT}
-				buff = FormatGenericCurrency(buff, _currency, args.Getlong(), true);
+				FormatGenericCurrency(buff, _currency, args.Getlong(), true);
 				break;
 
 			case StringControlCode.SCC_CURRENCY_LONG: // {CURRENCY_LONG}
-				buff = FormatGenericCurrency(buff, _currency, args.Getlong(StringControlCode.SCC_CURRENCY_LONG), false);
+				FormatGenericCurrency(buff, _currency, args.Getlong(StringControlCode.SCC_CURRENCY_LONG), false);
 				break;
 
 			case StringControlCode.SCC_DATE_TINY: // {DATE_TINY}
-				buff = FormatTinyOrISODate(buff, args.GetInt32(StringControlCode.SCC_DATE_TINY), STR_FORMAT_DATE_TINY);
+				FormatTinyOrISODate(buff, args.GetInt32(StringControlCode.SCC_DATE_TINY), STR_FORMAT_DATE_TINY);
 				break;
 
 			case StringControlCode.SCC_DATE_SHORT: // {DATE_SHORT}
-				buff = FormatMonthAndYear(buff, args.GetInt32(StringControlCode.SCC_DATE_SHORT), next_substr_case_index);
+				FormatMonthAndYear(buff, args.GetInt32(StringControlCode.SCC_DATE_SHORT), next_substr_case_index);
 				next_substr_case_index = 0;
 				break;
 
 			case StringControlCode.SCC_DATE_LONG: // {DATE_LONG}
-				buff = FormatYmdString(buff, args.GetInt32(StringControlCode.SCC_DATE_LONG), next_substr_case_index);
+				FormatYmdString(buff, args.GetInt32(StringControlCode.SCC_DATE_LONG), next_substr_case_index);
 				next_substr_case_index = 0;
 				break;
 
 			case StringControlCode.SCC_DATE_ISO: // {DATE_ISO}
-				buff = FormatTinyOrISODate(buff, args.GetInt32(), STR_FORMAT_DATE_ISO);
+				FormatTinyOrISODate(buff, args.GetInt32(), STR_FORMAT_DATE_ISO);
 				break;
 
 			case StringControlCode.SCC_FORCE: { // {FORCE}
-				assert(_settings_game.locale.units_force < lengthof(_units_force));
-				long args_array[1] = {_units_force[_settings_game.locale.units_force].c.ToDisplay(args.Getlong())};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_force[_settings_game.locale.units_force].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_force < _units_force.Length);
+				var args_array = new long[] {_units_force[_settings_game.locale.units_force].c.ToDisplay(args.Getlong())};
+				var tmp_params = new StringParameters(args_array);
+				FormatString(buff, GetStringPtr(_units_force[_settings_game.locale.units_force].s), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_HEIGHT: { // {HEIGHT}
-				assert(_settings_game.locale.units_height < lengthof(_units_height));
-				long args_array[] = {_units_height[_settings_game.locale.units_height].c.ToDisplay(args.Getlong())};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_height[_settings_game.locale.units_height].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_height < _units_height.Length);
+			    var args_array = new long[] { _units_height[_settings_game.locale.units_height].c.ToDisplay(args.Getlong())};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_height[_settings_game.locale.units_height].s), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_POWER: { // {POWER}
-				assert(_settings_game.locale.units_power < lengthof(_units_power));
-				long args_array[1] = {_units_power[_settings_game.locale.units_power].c.ToDisplay(args.Getlong())};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_power[_settings_game.locale.units_power].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_power < _units_power.Length);
+			    var args_array = new long[] { _units_power[_settings_game.locale.units_power].c.ToDisplay(args.Getlong())};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_power[_settings_game.locale.units_power].s), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_VELOCITY: { // {VELOCITY}
-				assert(_settings_game.locale.units_velocity < lengthof(_units_velocity));
-				long args_array[] = {ConvertKmhishSpeedToDisplaySpeed(args.Getlong(StringControlCode.SCC_VELOCITY))};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_velocity[_settings_game.locale.units_velocity].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_velocity < _units_velocity.Length);
+			    var args_array = new long[] { ConvertKmhishSpeedToDisplaySpeed(args.Getlong(StringControlCode.SCC_VELOCITY))};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_velocity[_settings_game.locale.units_velocity].s),tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_VOLUME_SHORT: { // {VOLUME_SHORT}
-				assert(_settings_game.locale.units_volume < lengthof(_units_volume));
-				long args_array[1] = {_units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong())};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_volume[_settings_game.locale.units_volume].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_volume < _units_volume.Length);
+			    var args_array = new long[] { _units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong())};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_volume[_settings_game.locale.units_volume].s), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_VOLUME_LONG: { // {VOLUME_LONG}
-				assert(_settings_game.locale.units_volume < lengthof(_units_volume));
-				long args_array[1] = {_units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong(StringControlCode.SCC_VOLUME_LONG))};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_volume[_settings_game.locale.units_volume].l), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_volume < _units_volume.Length);
+			    var args_array = new long[] { _units_volume[_settings_game.locale.units_volume].c.ToDisplay(args.Getlong(StringControlCode.SCC_VOLUME_LONG))};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_volume[_settings_game.locale.units_volume].l), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_WEIGHT_SHORT: { // {WEIGHT_SHORT}
-				assert(_settings_game.locale.units_weight < lengthof(_units_weight));
-				long args_array[1] = {_units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong())};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_weight[_settings_game.locale.units_weight].s), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_weight < _units_weight.Length);
+			    var args_array = new long[] { _units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong())};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_weight[_settings_game.locale.units_weight].s), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_WEIGHT_LONG: { // {WEIGHT_LONG}
-				assert(_settings_game.locale.units_weight < lengthof(_units_weight));
-				long args_array[1] = {_units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong(StringControlCode.SCC_WEIGHT_LONG))};
-				StringParameters tmp_params(args_array);
-				buff = FormatString(buff, GetStringPtr(_units_weight[_settings_game.locale.units_weight].l), &tmp_params);
+				Debug.Assert(_settings_game.locale.units_weight < _units_weight.Length);
+			    var args_array = new long[] { _units_weight[_settings_game.locale.units_weight].c.ToDisplay(args.Getlong(StringControlCode.SCC_WEIGHT_LONG))};
+var tmp_params = new StringParameters(args_array);
+
+                FormatString(buff, GetStringPtr(_units_weight[_settings_game.locale.units_weight].l), tmp_params);
 				break;
 			}
 
 			case StringControlCode.SCC_COMPANY_NAME: { // {COMPANY}
-				const Company *c = Company::GetIfValid(args.GetInt32());
+				var c = Company.GetIfValid(args.GetInt32());
 				if (c == null) break;
 
 				if (c.name != null) {
-					long args_array[] = {(long)(size_t)c.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long [] {(long)c.name};
+var tmp_params = new StringParameters(args_array);
+
+                    GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {c.name_2};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, c.name_1, &tmp_params);
+				    var args_array = new long[] { c.name_2};
+var tmp_params = new StringParameters(args_array);
+
+                    GetStringWithArgs(buff, c.name_1, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_COMPANY_NUM: { // {COMPANY_NUM}
-				CompanyID company = (CompanyID)args.GetInt32();
+				var company = (CompanyID)args.GetInt32();
 
 				/* Nothing is added for AI or inactive companies */
-				if (Company::IsValidHumanID(company)) {
-					long args_array[] = {company + 1};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_FORMAT_COMPANY_NUM, &tmp_params);
+				if (Company.IsValidHumanID(company)) {
+				    var args_array = new long[] { company + 1};
+var tmp_params = new StringParameters(args_array);
+
+                    GetStringWithArgs(buff, STR_FORMAT_COMPANY_NUM, tmp_params);
 				}
 				break;
 			}
@@ -1419,116 +1422,116 @@ var tmp_params = new StringParameters(args_array);
 			case StringControlCode.SCC_DEPOT_NAME: { // {DEPOT}
 				VehicleType vt = (VehicleType)args.GetInt32(StringControlCode.SCC_DEPOT_NAME);
 				if (vt == VEH_AIRCRAFT) {
-					ulong args_array[] = {(ulong)args.GetInt32()};
-					WChar types_array[] = {StringControlCode.SCC_STATION_NAME};
-					StringParameters tmp_params(args_array, 1, types_array);
-					buff = GetStringWithArgs(buff, STR_FORMAT_DEPOT_NAME_AIRCRAFT, &tmp_params);
+				    var args_array = new ulong[] { (ulong)args.GetInt32()};
+					var types_array = new char[] {StringControlCode.SCC_STATION_NAME};
+					var tmp_params = new StringParameters(args_array, 1, types_array);
+					GetStringWithArgs(buff, STR_FORMAT_DEPOT_NAME_AIRCRAFT, tmp_params);
 					break;
 				}
 
-				const Depot *d = Depot::Get(args.GetInt32());
+				var d = Depot.Get(args.GetInt32());
 				if (d.name != null) {
-					long args_array[] = {(long)(size_t)d.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)d.name};
+				    var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {d.town.index, d.town_cn + 1};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_FORMAT_DEPOT_NAME_TRAIN + 2 * vt + (d.town_cn == 0 ? 0 : 1), &tmp_params);
+					var args_array = new long[] {d.town.index, d.town_cn + 1};
+				    var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_FORMAT_DEPOT_NAME_TRAIN + 2 * vt + (d.town_cn == 0 ? 0 : 1), tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_ENGINE_NAME: { // {ENGINE}
-				const Engine *e = Engine::GetIfValid(args.GetInt32(StringControlCode.SCC_ENGINE_NAME));
+				var e = Engine.GetIfValid(args.GetInt32(StringControlCode.SCC_ENGINE_NAME));
 				if (e == null) break;
 
 				if (e.name != null && e.IsEnabled()) {
-					long args_array[] = {(long)(size_t)e.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)e.name};
+				    var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					StringParameters tmp_params(null, 0, null);
-					buff = GetStringWithArgs(buff, e.info.string_id, &tmp_params);
+				    var tmp_params = new StringParameters(null, 0, null);
+					GetStringWithArgs(buff, e.info.string_id, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_GROUP_NAME: { // {GROUP}
-				const Group *g = Group::GetIfValid(args.GetInt32());
+				var g = Group.GetIfValid(args.GetInt32());
 				if (g == null) break;
 
 				if (g.name != null) {
-					long args_array[] = {(long)(size_t)g.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+				    var args_array = new long[] { (long)g.name};
+				    var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {g.index};
-					StringParameters tmp_params(args_array);
+					var args_array = new long[] {g.index};
+				    var tmp_params = new StringParameters(args_array);
 
-					buff = GetStringWithArgs(buff, STR_FORMAT_GROUP_NAME, &tmp_params);
+					GetStringWithArgs(buff, STR_FORMAT_GROUP_NAME, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_INDUSTRY_NAME: { // {INDUSTRY}
-				const Industry *i = Industry::GetIfValid(args.GetInt32(StringControlCode.SCC_INDUSTRY_NAME));
+				var i = Industry.GetIfValid(args.GetInt32(StringControlCode.SCC_INDUSTRY_NAME));
 				if (i == null) break;
 
 				if (_scan_for_gender_data) {
 					/* Gender is defined by the industry type.
 					 * STR_FORMAT_INDUSTRY_NAME may have the town first, so it would result in the gender of the town name */
-					StringParameters tmp_params(null, 0, null);
-					buff = FormatString(buff, GetStringPtr(GetIndustrySpec(i.type).name), &tmp_params, next_substr_case_index);
+					var tmp_params = new StringParameters(null, 0, null);
+					FormatString(buff, GetStringPtr(GetIndustrySpec(i.type).name), tmp_params, next_substr_case_index);
 				} else {
 					/* First print the town name and the industry type name. */
-					long args_array[2] = {i.town.index, GetIndustrySpec(i.type).name};
-					StringParameters tmp_params(args_array);
+					var args_array = new long[2] {i.town.index, GetIndustrySpec(i.type).name};
+					var tmp_params = new StringParameters(args_array);
 
-					buff = FormatString(buff, GetStringPtr(STR_FORMAT_INDUSTRY_NAME), &tmp_params, next_substr_case_index);
+					FormatString(buff, GetStringPtr(STR_FORMAT_INDUSTRY_NAME), tmp_params, next_substr_case_index);
 				}
 				next_substr_case_index = 0;
 				break;
 			}
 
 			case StringControlCode.SCC_PRESIDENT_NAME: { // {PRESIDENT_NAME}
-				const Company *c = Company::GetIfValid(args.GetInt32(StringControlCode.SCC_PRESIDENT_NAME));
+				var c = Company.GetIfValid(args.GetInt32(StringControlCode.SCC_PRESIDENT_NAME));
 				if (c == null) break;
 
 				if (c.president_name != null) {
-					long args_array[] = {(long)(size_t)c.president_name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)c.president_name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {c.president_name_2};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, c.president_name_1, &tmp_params);
+					var args_array = new long[] {c.president_name_2};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, c.president_name_1, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_STATION_NAME: { // {STATION}
 				StationID sid = args.GetInt32(StringControlCode.SCC_STATION_NAME);
-				const Station *st = Station::GetIfValid(sid);
+				var st = Station.GetIfValid(sid);
 
 				if (st == null) {
 					/* The station doesn't exist anymore. The only place where we might
 					 * be "drawing" an invalid station is in the case of cargo that is
 					 * in transit. */
-					StringParameters tmp_params(null, 0, null);
-					buff = GetStringWithArgs(buff, STR_UNKNOWN_STATION, &tmp_params);
+					var tmp_params = new StringParameters(null, 0, null);
+					GetStringWithArgs(buff, STR_UNKNOWN_STATION, tmp_params);
 					break;
 				}
 
 				if (st.name != null) {
-					long args_array[] = {(long)(size_t)st.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)st.name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
 					StringID str = st.string_id;
 					if (st.indtype != IT_INVALID) {
 						/* Special case where the industry provides the name for the station */
-						const IndustrySpec *indsp = GetIndustrySpec(st.indtype);
+						var indsp = GetIndustrySpec(st.indtype);
 
 						/* Industry GRFs can change which might remove the station name and
 						 * thus cause very strange things. Here we check for that before we
@@ -1538,82 +1541,82 @@ var tmp_params = new StringParameters(args_array);
 						}
 					}
 
-					long args_array[] = {STR_TOWN_NAME, st.town.index, st.index};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, str, &tmp_params);
+					var args_array = new long[] {STR_TOWN_NAME, st.town.index, st.index};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, str, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_TOWN_NAME: { // {TOWN}
-				const Town *t = Town::GetIfValid(args.GetInt32(StringControlCode.SCC_TOWN_NAME));
+				var t = Town.GetIfValid(args.GetInt32(StringControlCode.SCC_TOWN_NAME));
 				if (t == null) break;
 
 				if (t.name != null) {
-					long args_array[] = {(long)(size_t)t.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)t.name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					buff = GetTownName(buff, t);
+					GetTownName(buff, t);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_WAYPOINT_NAME: { // {WAYPOINT}
-				Waypoint *wp = Waypoint::GetIfValid(args.GetInt32(StringControlCode.SCC_WAYPOINT_NAME));
+				var wp = Waypoint.GetIfValid(args.GetInt32(StringControlCode.SCC_WAYPOINT_NAME));
 				if (wp == null) break;
 
 				if (wp.name != null) {
-					long args_array[] = {(long)(size_t)wp.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)wp.name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {wp.town.index, wp.town_cn + 1};
-					StringParameters tmp_params(args_array);
+					var args_array = new long[] {wp.town.index, wp.town_cn + 1};
+					var tmp_params = new StringParameters(args_array);
 					StringID str = ((wp.string_id == STR_SV_STNAME_BUOY) ? STR_FORMAT_BUOY_NAME : STR_FORMAT_WAYPOINT_NAME);
-					if (wp.town_cn != 0) str++;
-					buff = GetStringWithArgs(buff, str, &tmp_params);
+					if (wp.town_cn != 0) str.MoveNext();
+					GetStringWithArgs(buff, str, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_VEHICLE_NAME: { // {VEHICLE}
-				const Vehicle *v = Vehicle::GetIfValid(args.GetInt32(StringControlCode.SCC_VEHICLE_NAME));
+				var v = Vehicle.GetIfValid(args.GetInt32(StringControlCode.SCC_VEHICLE_NAME));
 				if (v == null) break;
 
 				if (v.name != null) {
-					long args_array[] = {(long)(size_t)v.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)v.name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					long args_array[] = {v.unitnumber};
-					StringParameters tmp_params(args_array);
+					var args_array = new long[] {v.unitnumber};
+					var tmp_params = new StringParameters(args_array);
 
-					StringID str;
+					StringID strindId;
 					switch (v.type) {
-						default:           str = STR_INVALID_VEHICLE; break;
-						case VEH_TRAIN:    str = STR_SV_TRAIN_NAME; break;
-						case VEH_ROAD:     str = STR_SV_ROAD_VEHICLE_NAME; break;
-						case VEH_SHIP:     str = STR_SV_SHIP_NAME; break;
-						case VEH_AIRCRAFT: str = STR_SV_AIRCRAFT_NAME; break;
+						default:           strindId = STR_INVALID_VEHICLE; break;
+						case VEH_TRAIN:    strindId = STR_SV_TRAIN_NAME; break;
+						case VEH_ROAD:     strindId = STR_SV_ROAD_VEHICLE_NAME; break;
+						case VEH_SHIP:     strindId = STR_SV_SHIP_NAME; break;
+						case VEH_AIRCRAFT: strindId = STR_SV_AIRCRAFT_NAME; break;
 					}
 
-					buff = GetStringWithArgs(buff, str, &tmp_params);
+					GetStringWithArgs(buff, strindId, tmp_params);
 				}
 				break;
 			}
 
 			case StringControlCode.SCC_SIGN_NAME: { // {SIGN}
-				const Sign *si = Sign::GetIfValid(args.GetInt32());
+			    var si = Sign.GetIfValid(args.GetInt32());
 				if (si == null) break;
 
 				if (si.name != null) {
-					long args_array[] = {(long)(size_t)si.name};
-					StringParameters tmp_params(args_array);
-					buff = GetStringWithArgs(buff, STR_JUST_RAW_STRING, &tmp_params);
+					var args_array = new long[] {(long)si.name};
+					var tmp_params = new StringParameters(args_array);
+					GetStringWithArgs(buff, STR_JUST_RAW_STRING, tmp_params);
 				} else {
-					StringParameters tmp_params(null, 0, null);
-					buff = GetStringWithArgs(buff, STR_DEFAULT_SIGN_NAME, &tmp_params);
+					var tmp_params = new StringParameters(null, 0, null);
+					GetStringWithArgs(buff, STR_DEFAULT_SIGN_NAME, tmp_params);
 				}
 				break;
 			}
@@ -1624,32 +1627,28 @@ var tmp_params = new StringParameters(args_array);
 			}
 
 			default:
-				if (buff + Utf8CharLen(b) < last) buff += Utf8Encode(buff, b);
+				buff.AppendAsUtfChar(b);
 				break;
 		}
 	}
-	*buff = '\0';
-	return buff;
 }
 
 
-static char *StationGetSpecialString(StringBuilder buff, int x)
+public static void StationGetSpecialString(StringBuilder buff, int x)
 {
-	if ((x & FACIL_TRAIN)      && (buff + Utf8CharLen(StringControlCode.SCC_TRAIN) < last)) buff += Utf8Encode(buff, StringControlCode.SCC_TRAIN);
-	if ((x & FACIL_TRUCK_STOP) && (buff + Utf8CharLen(StringControlCode.SCC_LORRY) < last)) buff += Utf8Encode(buff, StringControlCode.SCC_LORRY);
-	if ((x & FACIL_BUS_STOP)   && (buff + Utf8CharLen(StringControlCode.SCC_BUS)   < last)) buff += Utf8Encode(buff, StringControlCode.SCC_BUS);
-	if ((x & FACIL_DOCK)       && (buff + Utf8CharLen(StringControlCode.SCC_SHIP)  < last)) buff += Utf8Encode(buff, StringControlCode.SCC_SHIP);
-	if ((x & FACIL_AIRPORT)    && (buff + Utf8CharLen(StringControlCode.SCC_PLANE) < last)) buff += Utf8Encode(buff, StringControlCode.SCC_PLANE);
-	*buff = '\0';
-	return buff;
+	if (x & FACIL_TRAIN)      buff.AppendAsUtfChar(StringControlCode.SCC_TRAIN);
+	if (x & FACIL_TRUCK_STOP) buff.AppendAsUtfChar(StringControlCode.SCC_LORRY);
+	if (x & FACIL_BUS_STOP)   buff.AppendAsUtfChar(StringControlCode.SCC_BUS);
+	if (x & FACIL_DOCK)       buff.AppendAsUtfChar(StringControlCode.SCC_SHIP);
+	if (x & FACIL_AIRPORT)    buff.AppendAsUtfChar(StringControlCode.SCC_PLANE);
 }
 
-static char *GetSpecialTownNameString(StringBuilder buff, int ind, uint32 seed)
+public static void GetSpecialTownNameString(StringBuilder buff, int ind, uint seed)
 {
-	return GenerateTownNameString(buff, ind, seed);
+	GenerateTownNameString(buff, ind, seed);
 }
 
-static const char * const _silly_company_names[] = {
+private static readonly string[] _silly_company_names = {
 	"Bloggs Brothers",
 	"Tiny Transport Ltd.",
 	"Express Travel",
@@ -1665,7 +1664,7 @@ static const char * const _silly_company_names[] = {
 	"Getout & Pushit Ltd."
 };
 
-static const char * const _surname_list[] = {
+        private static readonly string[] _surname_list = {
 	"Adams",
 	"Allan",
 	"Baker",
@@ -1697,7 +1696,7 @@ static const char * const _surname_list[] = {
 	"Watkins"
 };
 
-static const char * const _silly_surname_list[] = {
+        public static readonly string[] _silly_surname_list = {
 	"Grumpy",
 	"Dozy",
 	"Speedy",
@@ -1712,281 +1711,96 @@ static const char * const _silly_surname_list[] = {
 	"Nutkins"
 };
 
-static const char _initial_name_letters[] = {
+        public static readonly char[] _initial_name_letters = {
 	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
 	'K', 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'W',
 };
 
-static char *GenAndCoName(StringBuilder buff, uint32 arg)
+static void GenAndCoName(StringBuilder buff, uint arg)
 {
-	const char * const *base;
+    char[] list;
 	uint num;
 
 	if (_settings_game.game_creation.landscape == LT_TOYLAND) {
-		base = _silly_surname_list;
-		num  = lengthof(_silly_surname_list);
+		list = _silly_surname_list;
 	} else {
-		base = _surname_list;
-		num  = lengthof(_surname_list);
+		list = _surname_list;
 	}
 
-	buff = strecpy(buff, base[num * GB(arg, 16, 8) >> 8]);
-	buff = strecpy(buff, " & Co.");
-
-	return buff;
+	buff.Append(list[list.Length * BitMath.GB(arg, 16, 8) >> 8]);
+	buff.Append(" & Co.");
 }
 
-static char *GenPresidentName(StringBuilder buff, uint32 x)
+static void GenPresidentName(StringBuilder buff, uint x)
 {
-	char initial[] = "?. ";
-	const char * const *base;
-	uint num;
-	uint i;
+	buff.Append(_initial_name_letters[_initial_name_letters.Length] * BitMath.GB(x, 0, 8) >> 8]);
+	buff.Append(". ");
 
-	initial[0] = _initial_name_letters[sizeof(_initial_name_letters) * GB(x, 0, 8) >> 8];
-	buff = strecpy(buff, initial);
-
-	i = (sizeof(_initial_name_letters) + 35) * GB(x, 8, 8) >> 8;
-	if (i < sizeof(_initial_name_letters)) {
-		initial[0] = _initial_name_letters[i];
-		buff = strecpy(buff, initial);
+	var i = (_initial_name_letters.Length + 35) * BitMath.GB(x, 8, 8) >> 8;
+	if (i < _initial_name_letters.Length) {
+		buff.Append(_initial_name_letters[i]);
+	    buff.Append(". ");
 	}
 
-	if (_settings_game.game_creation.landscape == LT_TOYLAND) {
-		base = _silly_surname_list;
-		num  = lengthof(_silly_surname_list);
+    char[] list;
+    if (_settings_game.game_creation.landscape == LT_TOYLAND) {
+		list = _silly_surname_list;
 	} else {
-		base = _surname_list;
-		num  = lengthof(_surname_list);
+		list = _surname_list;
 	}
 
-	buff = strecpy(buff, base[num * GB(x, 16, 8) >> 8]);
-
-	return buff;
+	buff.Append(list[list.Length * BitMath.GB(x, 16, 8) >> 8]);
 }
 
-static char *GetSpecialNameString(StringBuilder buff, int ind, StringParameters *args)
+static void GetSpecialNameString(StringBuilder buff, int ind, StringParameters args)
 {
 	switch (ind) {
 		case 1: // not used
-			return strecpy(buff, _silly_company_names[min(args.GetInt32() & 0xFFFF, lengthof(_silly_company_names) - 1)]);
+			buff.Append(_silly_company_names[Math.Min(args.GetInt32() & 0xFFFF, _silly_company_names.Length - 1)]);
+            break;
 
 		case 2: // used for Foobar & Co company names
-			return GenAndCoName(buff, args.GetInt32());
+			GenAndCoName(buff, args.GetInt32());
+		    break;
 
 		case 3: // President name
-			return GenPresidentName(buff, args.GetInt32());
+			GenPresidentName(buff, args.GetInt32());
+		    break;
 	}
 
 	/* town name? */
-	if (IsInsideMM(ind - 6, 0, SPECSTR_TOWNNAME_LAST - SPECSTR_TOWNNAME_START + 1)) {
+	if (MathFuncs.IsInsideMM(ind - 6, 0, SPECSTR_TOWNNAME_LAST - SPECSTR_TOWNNAME_START + 1)) {
 		buff = GetSpecialTownNameString(buff, ind - 6, args.GetInt32());
-		return strecpy(buff, " Transport");
+		buff.Append(" Transport");
+        break;
 	}
 
 	/* language name? */
-	if (IsInsideMM(ind, (SPECSTR_LANGUAGE_START - 0x70E4), (SPECSTR_LANGUAGE_END - 0x70E4) + 1)) {
+	if (MathFuncs.IsInsideMM(ind, (SPECSTR_LANGUAGE_START - 0x70E4), (SPECSTR_LANGUAGE_END - 0x70E4) + 1)) {
 		int i = ind - (SPECSTR_LANGUAGE_START - 0x70E4);
-		return strecpy(buff,
-			&_languages[i] == _current_language ? _current_language.own_name : _languages[i].name);
+		buff.Append(_languages[i] == _current_language ? _current_language.own_name : _languages[i].name);
+	    break;
 	}
 
 	/* resolution size? */
-	if (IsInsideMM(ind, (SPECSTR_RESOLUTION_START - 0x70E4), (SPECSTR_RESOLUTION_END - 0x70E4) + 1)) {
+	if (MathFuncs.IsInsideMM(ind, (SPECSTR_RESOLUTION_START - 0x70E4), (SPECSTR_RESOLUTION_END - 0x70E4) + 1)) {
 		int i = ind - (SPECSTR_RESOLUTION_START - 0x70E4);
-		buff += seprintf(
-			buff, "%ux%u", _resolutions[i].width, _resolutions[i].height
-		);
-		return buff;
+		buff.Append($"{_resolutions[i].width}x{_resolutions[i].height}");
+	    break;
 	}
 
-	NOT_REACHED();
+	throw new NotReachedException();
 }
 
-#ifdef ENABLE_NETWORK
 extern void SortNetworkLanguages();
-#else /* ENABLE_NETWORK */
-static inline void SortNetworkLanguages() {}
-#endif /* ENABLE_NETWORK */
 
-/**
- * Check whether the header is a valid header for OpenTTD.
- * @return true iff the header is deemed valid.
- */
-bool LanguagePackHeader::IsValid() const
+
+public int StringIDSorter(StringID a, StringID b)
 {
-	return this.ident        == TO_LE32(LanguagePackHeader::IDENT) &&
-	       this.version      == TO_LE32(LANGUAGE_PACK_VERSION) &&
-	       this.plural_form  <  LANGUAGE_MAX_PLURAL &&
-	       this.text_dir     <= 1 &&
-	       this.newgrflangid < MAX_LANG &&
-	       this.num_genders  < MAX_NUM_GENDERS &&
-	       this.num_cases    < MAX_NUM_CASES &&
-	       StrValid(this.name,                           lastof(this.name)) &&
-	       StrValid(this.own_name,                       lastof(this.own_name)) &&
-	       StrValid(this.isocode,                        lastof(this.isocode)) &&
-	       StrValid(this.digit_group_separator,          lastof(this.digit_group_separator)) &&
-	       StrValid(this.digit_group_separator_currencyof(this.digit_group_separator_currency)) &&
-	       StrValid(this.digit_decimal_separator,        lastof(this.digit_decimal_separator));
-}
+	var stra = GetString(a);
+    var strb = GetString(b);
 
-/**
- * Read a particular language.
- * @param lang The metadata about the language.
- * @return Whether the loading went okay or not.
- */
-bool ReadLanguagePack(const LanguageMetadata *lang)
-{
-	/* Current language pack */
-	size_t len;
-	LanguagePack *lang_pack = (LanguagePack *)ReadFileToMem(lang.file, &len, 1U << 20);
-	if (lang_pack == null) return false;
-
-	/* End of read data (+ terminating zero added in ReadFileToMem()) */
-	const char *end = (char *)lang_pack + len + 1;
-
-	/* We need at least one byte of lang_pack.data */
-	if (end <= lang_pack.data || !lang_pack.IsValid()) {
-		free(lang_pack);
-		return false;
-	}
-
-#if TTD_ENDIAN == TTD_BIG_ENDIAN
-	for (uint i = 0; i < TAB_COUNT; i++) {
-		lang_pack.offsets[i] = ReadLE16Aligned(&lang_pack.offsets[i]);
-	}
-#endif /* TTD_ENDIAN == TTD_BIG_ENDIAN */
-
-	uint count = 0;
-	for (uint i = 0; i < TAB_COUNT; i++) {
-		ushort num = lang_pack.offsets[i];
-		if (num > TAB_SIZE) {
-			free(lang_pack);
-			return false;
-		}
-
-		_langtab_start[i] = count;
-		_langtab_num[i] = num;
-		count += num;
-	}
-
-	/* Allocate offsets */
-	char **langpack_offs = MallocT<char *>(count);
-
-	/* Fill offsets */
-	char *s = lang_pack.data;
-	len = (byte)*s++;
-	for (uint i = 0; i < count; i++) {
-		if (s + len >= end) {
-			free(lang_pack);
-			free(langpack_offs);
-			return false;
-		}
-		if (len >= 0xC0) {
-			len = ((len & 0x3F) << 8) + (byte)*s++;
-			if (s + len >= end) {
-				free(lang_pack);
-				free(langpack_offs);
-				return false;
-			}
-		}
-		langpack_offs[i] = s;
-		s += len;
-		len = (byte)*s;
-		*s++ = '\0'; // zero terminate the string
-	}
-
-	free(_langpack);
-	_langpack = lang_pack;
-
-	free(_langpack_offs);
-	_langpack_offs = langpack_offs;
-
-	_current_language = lang;
-	_current_text_dir = (TextDirection)_current_language.text_dir;
-	const char *c_file = strrchr(_current_language.file, PATHSEPCHAR) + 1;
-	strecpy(_config_language_file, c_fileof(_config_language_file));
-	SetCurrentGrfLangID(_current_language.newgrflangid);
-
-#ifdef WITH_ICU_SORT
-	/* Delete previous collator. */
-	if (_current_collator != null) {
-		delete _current_collator;
-		_current_collator = null;
-	}
-
-	/* Create a collator instance for our current locale. */
-	UErrorCode status = U_ZERO_ERROR;
-	_current_collator = Collator::createInstance(Locale(_current_language.isocode), status);
-	/* Sort number substrings by their numerical value. */
-	if (_current_collator != null) _current_collator.setAttribute(UCOL_NUMERIC_COLLATION, UCOL_ON, status);
-	/* Avoid using the collator if it is not correctly set. */
-	if (U_FAILURE(status)) {
-		delete _current_collator;
-		_current_collator = null;
-	}
-#endif /* WITH_ICU_SORT */
-
-	/* Some lists need to be sorted again after a language change. */
-	ReconsiderGameScriptLanguage();
-	InitializeSortedCargoSpecs();
-	SortIndustryTypes();
-	BuildIndustriesLegend();
-	SortNetworkLanguages();
-#ifdef ENABLE_NETWORK
-	BuildContentTypeStringList();
-#endif /* ENABLE_NETWORK */
-	InvalidateWindowClassesData(WC_BUILD_VEHICLE);      // Build vehicle window.
-	InvalidateWindowClassesData(WC_TRAINS_LIST);        // Train group window.
-	InvalidateWindowClassesData(WC_ROADVEH_LIST);       // Road vehicle group window.
-	InvalidateWindowClassesData(WC_SHIPS_LIST);         // Ship group window.
-	InvalidateWindowClassesData(WC_AIRCRAFT_LIST);      // Aircraft group window.
-	InvalidateWindowClassesData(WC_INDUSTRY_DIRECTORY); // Industry directory window.
-	InvalidateWindowClassesData(WC_STATION_LIST);       // Station list window.
-
-	return true;
-}
-
-/* Win32 implementation in win32.cpp.
- * OS X implementation in os/macosx/macos.mm. */
-#if !(defined(WIN32) || defined(__APPLE__))
-/**
- * Determine the current charset based on the environment
- * First check some default values, after this one we passed ourselves
- * and if none exist return the value for $LANG
- * @param param environment variable to check conditionally if default ones are not
- *        set. Pass null if you don't want additional checks.
- * @return return string containing current charset, or null if not-determinable
- */
-const char *GetCurrentLocale(const char *param)
-{
-	const char *env;
-
-	env = getenv("LANGUAGE");
-	if (env != null) return env;
-
-	env = getenv("LC_ALL");
-	if (env != null) return env;
-
-	if (param != null) {
-		env = getenv(param);
-		if (env != null) return env;
-	}
-
-	return getenv("LANG");
-}
-#else
-const char *GetCurrentLocale(const char *param);
-#endif /* !(defined(WIN32) || defined(__APPLE__)) */
-
-int CDECL StringIDSorter(const StringID *a, const StringID *b)
-{
-	char stra[512];
-	char strb[512];
-	GetString(stra, *aof(stra));
-	GetString(strb, *bof(strb));
-
-	return strnatcmp(stra, strb);
+	return String.Compare(stra, strb, StringComparison.CurrentCultureIgnoreCase);
 }
 
 /**
@@ -1994,68 +1808,40 @@ int CDECL StringIDSorter(const StringID *a, const StringID *b)
  * @param newgrflangid NewGRF languages ID to check.
  * @return The language's metadata, or null if it is not known.
  */
-const LanguageMetadata *GetLanguage(byte newgrflangid)
+public LanguageMetadata GetLanguage(byte newgrflangid)
 {
-	for (const LanguageMetadata *lang = _languages.Begin(); lang != _languages.End(); lang++) {
+	foreach (var lang in _languages) {
 		if (newgrflangid == lang.newgrflangid) return lang;
 	}
 
 	return null;
 }
 
-/**
- * Reads the language file header and checks compatibility.
- * @param file the file to read
- * @param hdr  the place to write the header information to
- * @return true if and only if the language file is of a compatible version
- */
-static bool GetLanguageFileHeader(const char *file, LanguagePackHeader *hdr)
-{
-	FILE *f = fopen(file, "rb");
-	if (f == null) return false;
-
-	size_t read = fread(hdr, sizeof(*hdr), 1, f);
-	fclose(f);
-
-	bool ret = read == 1 && hdr.IsValid();
-
-	/* Convert endianness for the windows language ID */
-	if (ret) {
-		hdr.missing = FROM_LE16(hdr.missing);
-		hdr.winlangid = FROM_LE16(hdr.winlangid);
-	}
-	return ret;
-}
 
 /**
  * Gets a list of languages from the given directory.
  * @param path  the base directory to search in
  */
-static void GetLanguageList(const char *path)
+static void GetLanguageList(string path)
 {
-	DIR *dir = ttd_opendir(path);
-	if (dir != null) {
-		struct dirent *dirent;
-		while ((dirent = readdir(dir)) != null) {
-			const char *d_name    = FS2OTTD(dirent.d_name);
-			const char *extension = strrchr(d_name, '.');
-
-			/* Not a language file */
-			if (extension == null || strcmp(extension, ".lng") != 0) continue;
-
-			LanguageMetadata lmd;
-			seprintf(lmd.fileof(lmd.file), "%s%s", path, d_name);
-
+	var dir = new DirectoryInfo(path);
+	if (dir.Exists)
+	{
+		foreach (var file in dir.GetFiles("*.lng"))
+        {
+		
+			var lmd = new LanguageMetadata();
+            lmd.file = file.FullName;
+            
 			/* Check whether the file is of the correct version */
-			if (!GetLanguageFileHeader(lmd.file, &lmd)) {
-				DEBUG(misc, 3, "%s is not a valid language file", lmd.file);
+			if (LanguagePackHeader.ReadHeader(lmd.file, lmd) == false) {
+				Log.Debug($"{lmd.file} is not a valid language file");
 			} else if (GetLanguage(lmd.newgrflangid) != null) {
-				DEBUG(misc, 3, "%s's language ID is already known", lmd.file);
+				Log.Debug($"{lmd.file}'s language ID is already known");
 			} else {
-				*_languages.Append() = lmd;
+				_languages.Add(lmd);
 			}
 		}
-		closedir(dir);
 	}
 }
 
@@ -2065,135 +1851,147 @@ static void GetLanguageList(const char *path)
  */
 void InitializeLanguagePacks()
 {
-	Searchpath sp;
-
-	FOR_ALL_SEARCHPATHS(sp) {
-		char path[MAX_PATH];
-		FioAppendDirectory(pathof(path), sp, LANG_DIR);
+    foreach (var sp in FileIO.FOR_ALL_SEARCHPATHS)
+    { 
+		var path = FileIO.FioAppendDirectory(sp, Subdirectory.LANG_DIR);
 		GetLanguageList(path);
 	}
-	if (_languages.Length() == 0) usererror("No available language packs (invalid versions?)");
+	if (_languages.Any() == false) usererror("No available language packs (invalid versions?)");
 
 	/* Acquire the locale of the current system */
-	const char *lang = GetCurrentLocale("LC_MESSAGES");
+	var lang = GetCurrentLocale("LC_MESSAGES");
 	if (lang == null) lang = "en_GB";
 
-	const LanguageMetadata *chosen_language   = null; ///< Matching the language in the configuration file or the current locale
-	const LanguageMetadata *language_fallback = null; ///< Using pt_PT for pt_BR locale when pt_BR is not available
-	const LanguageMetadata *en_GB_fallback    = _languages.Begin(); ///< Fallback when no locale-matching language has been found
+    /// Matching the language in the configuration file or the current locale
+    LanguageMetadata chosen_language   = null;
+    /// Using pt_PT for pt_BR locale when pt_BR is not available
+    LanguageMetadata language_fallback = null;
+    /// Fallback when no locale-matching language has been found
+    LanguageMetadata en_GB_fallback    = _languages.First(); 
 
 	/* Find a proper language. */
-	for (const LanguageMetadata *lng = _languages.Begin(); lng != _languages.End(); lng++) {
+	foreach (var lng in _languages) {
 		/* We are trying to find a default language. The priority is by
 		 * configuration file, local environment and last, if nothing found,
 		 * English. */
-		const char *lang_file = strrchr(lng.file, PATHSEPCHAR) + 1;
-		if (strcmp(lang_file, _config_language_file) == 0) {
+	    var lang_file = Path.GetFileName(lng.file);
+		if (lang_file == _config_language_file) {
 			chosen_language = lng;
 			break;
 		}
 
-		if (strcmp (lng.isocode, "en_GB") == 0) en_GB_fallback    = lng;
-		if (strncmp(lng.isocode, lang, 5) == 0) chosen_language   = lng;
-		if (strncmp(lng.isocode, lang, 2) == 0) language_fallback = lng;
+		if (lng.isocode == "en_GB") {en_GB_fallback    = lng;}
+		if (string.Compare(lng.isocode,0, lang,0, 5) == 0) {chosen_language   = lng;}
+	    if (string.Compare(lng.isocode, 0, lang, 0, 2) == 0) {language_fallback = lng;}
 	}
 
 	/* We haven't found the language in the config nor the one in the locale.
 	 * Now we set it to one of the fallback languages */
 	if (chosen_language == null) {
-		chosen_language = (language_fallback != null) ? language_fallback : en_GB_fallback;
+		chosen_language = language_fallback ?? en_GB_fallback;
 	}
 
-	if (!ReadLanguagePack(chosen_language)) usererror("Can't read language pack '%s'", chosen_language.file);
+	if (!ReadLanguagePack(chosen_language)) usererror($"Can't read language pack '{chosen_language.file}'");
 }
 
 /**
  * Get the ISO language code of the currently loaded language.
  * @return the ISO code.
  */
-const char *GetCurrentLanguageIsoCode()
+string GetCurrentLanguageIsoCode()
 {
 	return _langpack.isocode;
 }
 
+
 /**
- * Check whether there are glyphs missing in the current language.
- * @param Pointer to an address for storing the text pointer.
- * @return If glyphs are missing, return \c true, else return \c false.
- * @post If \c true is returned and str is not null, *str points to a string that is found to contain at least one missing glyph.
- */
-bool MissingGlyphSearcher::FindMissingGlyphs(const char **str)
-{
-	InitFreeType(this.Monospace());
-	const Sprite *question_mark[FS_END];
+* Read a particular language.
+* @param lang The metadata about the language.
+* @return Whether the loading went okay or not.
+*/
+        bool ReadLanguagePack(LanguageMetadata lang)
+        {
+            /* Current language pack */
+            var file = new FileInfo(lang.file);
+            if (file.Exists == false) return false;
 
-	for (FontSize size = this.Monospace() ? FS_MONO : FS_BEGIN; size < (this.Monospace() ? FS_END : FS_MONO); size++) {
-		question_mark[size] = GetGlyph(size, '?');
-	}
+            uint count = 0;
+            for (uint i = 0; i < Language.TAB_COUNT; i++)
+            {
+                ushort num = lang.offsets[i];
+                if (num > Language.TAB_SIZE)
+                {
+                    return false;
+                }
 
-	this.Reset();
-	for (const char *text = this.NextString(); text != null; text = this.NextString()) {
-		FontSize size = this.DefaultSize();
-		if (str != null) *str = text;
-		for (WChar c = Utf8Consume(&text); c != '\0'; c = Utf8Consume(&text)) {
-			if (c == StringControlCode.SCC_TINYFONT) {
-				size = FS_SMALL;
-			} else if (c == StringControlCode.SCC_BIGFONT) {
-				size = FS_LARGE;
-			} else if (!IsInsideMM(c, StringControlCode.SCC_SPRITE_START, StringControlCode.SCC_SPRITE_END) && IsPrintable(c) && !IsTextDirectionChar(c) && c != '?' && GetGlyph(size, c) == question_mark[size]) {
-				/* The character is printable, but not in the normal font. This is the case we were testing for. */
-				return true;
-			}
-		}
-	}
-	return false;
-}
+                _langtab_start[i] = count;
+                _langtab_num[i] = num;
+                count += num;
+    }
+    /* Allocate offsets */
+            var langpack_offs = new string[count];
 
-/** Helper for searching through the language pack. */
-class LanguagePackGlyphSearcher : public MissingGlyphSearcher {
-	uint i; ///< Iterator for the primary language tables.
-	uint j; ///< Iterator for the secondary language tables.
+    using (var stream = file.OpenRead())
+            {
+                if (stream.Seek(LanguagePackHeader.HeaderByteSize, SeekOrigin.Begin) < LanguagePackHeader.HeaderByteSize)
+                {
+                    return false;
+                }
+                using (var reader = new BinaryReader(stream))
+                {
+                    /* Fill offsets */
+                    for (uint i = 0; i < count; i++)
+                    {
+                        langpack_offs[i] = reader.ReadString();
+                    }
+                }
+            }
 
-	/* virtual */ void Reset()
-	{
-		this.i = 0;
-		this.j = 0;
-	}
 
-	/* virtual */ FontSize DefaultSize()
-	{
-		return FS_NORMAL;
-	}
+            _langpack = lang;
+            _langpack_offs = langpack_offs;
 
-	/* virtual */ const char *NextString()
-	{
-		if (this.i >= TAB_COUNT) return null;
+            _current_language = lang;
+            _current_text_dir = (TextDirection)_current_language.text_dir;
+            _config_language_file = Path.GetFileName(_current_language.file);
+            SetCurrentGrfLangID(_current_language.newgrflangid);
 
-		const char *ret = _langpack_offs[_langtab_start[this.i] + this.j];
+            /* Delete previous collator. */
+            if (_current_collator != null)
+            {
+                _current_collator = null;
+            }
 
-		this.j++;
-		while (this.i < TAB_COUNT && this.j >= _langtab_num[this.i]) {
-			this.i++;
-			this.j = 0;
-		}
+            /* Create a collator instance for our current locale. */
+            UErrorCode status = U_ZERO_ERROR;
+            _current_collator = Collator.createInstance(Locale(_current_language.isocode), status);
+            /* Sort number substrings by their numerical value. */
+            if (_current_collator != null) _current_collator.setAttribute(UCOL_NUMERIC_COLLATION, UCOL_ON, status);
+            /* Avoid using the collator if it is not correctly set. */
+            if (U_FAILURE(status))
+            {
+                _current_collator = null;
+            }
 
-		return ret;
-	}
+            /* Some lists need to be sorted again after a language change. */
+            ReconsiderGameScriptLanguage();
+            InitializeSortedCargoSpecs();
+            SortIndustryTypes();
+            BuildIndustriesLegend();
+            SortNetworkLanguages();
+            BuildContentTypeStringList();
+            InvalidateWindowClassesData(WC_BUILD_VEHICLE);      // Build vehicle window.
+            InvalidateWindowClassesData(WC_TRAINS_LIST);        // Train group window.
+            InvalidateWindowClassesData(WC_ROADVEH_LIST);       // Road vehicle group window.
+            InvalidateWindowClassesData(WC_SHIPS_LIST);         // Ship group window.
+            InvalidateWindowClassesData(WC_AIRCRAFT_LIST);      // Aircraft group window.
+            InvalidateWindowClassesData(WC_INDUSTRY_DIRECTORY); // Industry directory window.
+            InvalidateWindowClassesData(WC_STATION_LIST);       // Station list window.
 
-	/* virtual */ bool Monospace()
-	{
-		return false;
-	}
+            return true;
+        }
 
-	/* virtual */ void SetFontNames(FreeTypeSettings *settings, const char *font_name)
-	{
-#ifdef WITH_FREETYPE
-		strecpy(settings.small.font,  font_nameof(settings.small.font));
-		strecpy(settings.medium.font, font_nameof(settings.medium.font));
-		strecpy(settings.large.font,  font_nameof(settings.large.font));
-#endif /* WITH_FREETYPE */
-	}
-};
+        private static LanguagePackGlyphSearcher pack_searcher;
 
 /**
  * Check whether the currently loaded language pack
@@ -2208,12 +2006,10 @@ class LanguagePackGlyphSearcher : public MissingGlyphSearcher {
  * @param searcher  The methods to use to search for strings to check.
  *                  If null the loaded language pack searcher is used.
  */
-void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher *searcher)
-{
-	static LanguagePackGlyphSearcher pack_searcher;
-	if (searcher == null) searcher = &pack_searcher;
+void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher searcher)
+{	
+	if (searcher == null) searcher = pack_searcher;
 	bool bad_font = !base_font || searcher.FindMissingGlyphs(null);
-#ifdef WITH_FREETYPE
 	if (bad_font) {
 		/* We found an unprintable character... lets try whether we can find
 		 * a fallback font that can print the characters in the current language. */
@@ -2231,7 +2027,6 @@ void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher *searcher)
 			InitFreeType(searcher.Monospace());
 		}
 	}
-#endif
 
 	if (bad_font) {
 		/* All attempts have failed. Display an error. As we do not want the string to be translated by
@@ -2252,25 +2047,6 @@ void CheckForMissingGlyphs(bool base_font, MissingGlyphSearcher *searcher)
 	/* Update the font with cache */
 	LoadStringWidthTable(searcher.Monospace());
 
-#if !defined(WITH_ICU_LAYOUT)
-	/*
-	 * For right-to-left languages we need the ICU library. If
-	 * we do not have support for that library we warn the user
-	 * about it with a message. As we do not want the string to
-	 * be translated by the translators, we 'force' it into the
-	 * binary and 'load' it via a BindCString. To do this
-	 * properly we have to set the colour of the string,
-	 * otherwise we end up with a lot of artifacts. The colour
-	 * 'character' might change in the future, so for safety
-	 * we just Utf8 Encode it into the string, which takes
-	 * exactly three characters, so it replaces the "XXX" with
-	 * the colour marker.
-	 */
-	if (_current_text_dir != TD_LTR) {
-		static char *err_str = stredup("XXXThis version of OpenTTD does not support right-to-left languages. Recompile with icu enabled.");
-		Utf8Encode(err_str, StringControlCode.SCC_YELLOW);
-		SetDParamStr(0, err_str);
-		ShowErrorMessage(STR_JUST_RAW_STRING, INVALID_STRING_ID, WL_ERROR);
-	}
-#endif /* !WITH_ICU_LAYOUT */
+}
+}
 }

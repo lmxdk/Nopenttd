@@ -65,6 +65,11 @@
     <Compile Include="src\FileList.cs" />
     <Compile Include="src\FileScanner.cs" />
     <Compile Include="src\FiosFileScanner.cs" />
+    <Compile Include="src\LanguageMetadata.cs" />
+    <Compile Include="src\LanguagePack.cs" />
+    <Compile Include="src\LanguagePackGlyphSearcher.cs" />
+    <Compile Include="src\LanguagePackHeader.cs" />
+    <Compile Include="src\MissingGlyphSearcher.cs" />
     <Compile Include="src\news_type.cs" />
     <Compile Include="src\ScenarioScanner.cs" />
     <Compile Include="src\Settings\Settings.cs" />
@@ -266,6 +271,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\table\control_codes.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\Core\endian_func.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

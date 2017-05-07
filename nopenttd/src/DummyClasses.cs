@@ -43,6 +43,16 @@ namespace Nopenttd.src
             }
             return s;
         }
+
+        public static string ReadNullTerminatedString(this char[] arr)
+        {
+            var nullIndex = Array.IndexOf(arr, '\0');
+            if (nullIndex > 0)
+            {
+                return new String(arr, 0, nullIndex - 1);
+            }
+            return new String(arr);
+        }
     }
 
 
