@@ -92,7 +92,7 @@ namespace Nopenttd.Core
          * @return The new value of \a x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint AB(ref uint x, byte s, byte n, uint i)
+        public static uint AB( uint x, byte s, byte n, uint i)
 {
 	uint mask = ((((uint)1U << n) - 1) << s);
 	x = (uint)((x & ~mask) | ((x + (i << s)) & mask));
@@ -181,7 +181,7 @@ namespace Nopenttd.Core
          * @return The new value of x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ClearBits(ref int x, byte y)
+        public static int ClearBits(int x, byte y)
         {
             return x &= ~y;
         }
@@ -200,7 +200,7 @@ namespace Nopenttd.Core
          * @return The new value of the old value with the bit toggled
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ToggleBit(ref int x, byte y)
+        public static int ToggleBit(int x, byte y)
 {
 	return x = (int)(x ^ ((int)1U << y));
 }

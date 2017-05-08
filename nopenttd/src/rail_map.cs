@@ -118,7 +118,7 @@ namespace Nopenttd
  * @param t the tile to get the rail type from
  * @return the rail type of the tile
  */
-        public static RailType GetRailType(TileIndex t)
+        public static RailType GetRailType(this TileIndex t)
         {
             return (RailType) BitMath.GB(Map._m[t].m3, 0, 4);
         }
@@ -128,7 +128,7 @@ namespace Nopenttd
  * @param t the tile to set the rail type of
  * @param r the new rail type for the tile
  */
-        public static void SetRailType(TileIndex t, RailType r)
+        public static void SetRailType(this TileIndex t, RailType r)
         {
             BitMath.SB(Map._m[t].m3, 0, 4, r);
         }
@@ -150,7 +150,7 @@ namespace Nopenttd
  * @param t the tile to set the track bits of
  * @param b the new track bits for the tile
  */
-        public static void SetTrackBits(TileIndex t, TrackBits b)
+        public static void SetTrackBits(this TileIndex t, TrackBits b)
         {
             Debug.Assert(IsPlainRailTile(t));
             BitMath.SB(Map._m[t].m5, 0, 6, b);
@@ -174,7 +174,7 @@ namespace Nopenttd
  * @pre IsRailDepotTile(t)
  * @return the direction the depot is facing
  */
-        public static DiagDirection GetRailDepotDirection(TileIndex t)
+        public static DiagDirection GetRailDepotDirection(this TileIndex t)
         {
             return (DiagDirection) BitMath.GB(Map._m[t].m5, 0, 2);
         }
@@ -185,7 +185,7 @@ namespace Nopenttd
  * @param t the tile to get the depot track from
  * @return the track of the depot
  */
-        public static Track GetRailDepotTrack(TileIndex t)
+        public static Track GetRailDepotTrack(this TileIndex t)
         {
             return DiagDirToDiagTrack(GetRailDepotDirection(t));
         }
@@ -197,7 +197,7 @@ namespace Nopenttd
  * @param t the tile to query
  * @return the track bits
  */
-        public static TrackBits GetRailReservationTrackBits(TileIndex t)
+        public static TrackBits GetRailReservationTrackBits(this TileIndex t)
         {
             Debug.Assert(IsPlainRailTile(t));
             byte track_b = BitMath.GB(Map._m[t].m2, 8, 3);
@@ -214,7 +214,7 @@ namespace Nopenttd
  * @param t the tile to change
  * @param b the track bits
  */
-        public static void SetTrackReservation(TileIndex t, TrackBits b)
+        public static void SetTrackReservation(this TileIndex t, TrackBits b)
         {
             Debug.Assert(IsPlainRailTile(t));
             Debug.Assert(b != TrackBits.INVALID_TRACK_BIT);
@@ -263,7 +263,7 @@ namespace Nopenttd
  * @param t the depot tile
  * @return reservation state
  */
-        public static bool HasDepotReservation(TileIndex t)
+        public static bool HasDepotReservation(this TileIndex t)
         {
             Debug.Assert(IsRailDepot(t));
             return BitMath.HasBit(Map._m[t].m5, 4);
@@ -275,7 +275,7 @@ namespace Nopenttd
  * @param t the depot tile
  * @param b the reservation state
  */
-        public static void SetDepotReservation(TileIndex t, bool b)
+        public static void SetDepotReservation(this TileIndex t, bool b)
         {
             Debug.Assert(IsRailDepot(t));
             Map._m[t].m5 = BitMath.SB(Map._m[t].m5, 4, 1, b ? 1 : 0);
@@ -287,7 +287,7 @@ namespace Nopenttd
  * @param t the tile
  * @return reserved track bits
  */
-        public static TrackBits GetDepotReservationTrackBits(TileIndex t)
+        public static TrackBits GetDepotReservationTrackBits(this TileIndex t)
         {
             return HasDepotReservation(t) ? TrackToTrackBits(GetRailDepotTrack(t)) : TrackBits.TRACK_BIT_NONE;
         }
@@ -298,14 +298,14 @@ namespace Nopenttd
             return s == SignalType.SIGTYPE_PBS || s == SignalType.SIGTYPE_PBS_ONEWAY;
         }
 
-        public static SignalType GetSignalType(TileIndex t, Track track)
+        public static SignalType GetSignalType(this TileIndex t, Track track)
         {
             Debug.Assert(GetRailTileType(t) == RailTileType.RAIL_TILE_SIGNALS);
             byte pos = (byte) ((track == Track.TRACK_LOWER || track == Track.TRACK_RIGHT) ? 4 : 0);
             return (SignalType) BitMath.GB(Map._m[t].m2, pos, 3);
         }
 
-        public static void SetSignalType(TileIndex t, Track track, SignalType s)
+        public static void SetSignalType(this TileIndex t, Track track, SignalType s)
         {
             Debug.Assert(GetRailTileType(t) == RailTileType.RAIL_TILE_SIGNALS);
             byte pos = (byte) ((track == Track.TRACK_LOWER || track == Track.TRACK_RIGHT) ? 4 : 0);
@@ -313,25 +313,25 @@ namespace Nopenttd
             if (track == Track.INVALID_TRACK) BitMath.SB(Map._m[t].m2, 4, 3, s);
         }
 
-        public static bool IsPresignalEntry(TileIndex t, Track track)
+        public static bool IsPresignalEntry(this TileIndex t, Track track)
         {
             var type = GetSignalType(t, track);
             return type == SignalType.SIGTYPE_ENTRY || type == SignalType.SIGTYPE_COMBO;
         }
 
-        public static bool IsPresignalExit(TileIndex t, Track track)
+        public static bool IsPresignalExit(this TileIndex t, Track track)
         {
             var type = GetSignalType(t, track);
             return type == SignalType.SIGTYPE_EXIT || type == SignalType.SIGTYPE_COMBO;
         }
 
 /** One-way signals can't be passed the 'wrong' way. */
-        public static bool IsOnewaySignal(TileIndex t, Track track)
+        public static bool IsOnewaySignal(this TileIndex t, Track track)
         {
             return GetSignalType(t, track) != SignalType.SIGTYPE_PBS;
         }
 
-        public static void CycleSignalSide(TileIndex t, Track track)
+        public static void CycleSignalSide(this TileIndex t, Track track)
         {
             byte sig;
             byte pos = (track == Track.TRACK_LOWER || track == Track.TRACK_RIGHT) ? 4 : 6;
@@ -341,13 +341,13 @@ namespace Nopenttd
             BitMath.SB(Map._m[t].m3, pos, 2, sig);
         }
 
-        public static SignalVariant GetSignalVariant(TileIndex t, Track track)
+        public static SignalVariant GetSignalVariant(this TileIndex t, Track track)
         {
             byte pos = (byte) ((track == Track.TRACK_LOWER || track == Track.TRACK_RIGHT) ? 7 : 3);
             return (SignalVariant) BitMath.GB(Map._m[t].m2, pos, 1);
         }
 
-        public static void SetSignalVariant(TileIndex t, Track track, SignalVariant v)
+        public static void SetSignalVariant(this TileIndex t, Track track, SignalVariant v)
         {
             byte pos = (byte) ((track == Track.TRACK_LOWER || track == Track.TRACK_RIGHT) ? 7 : 3);
             BitMath.SB(Map._m[t].m2, pos, 1, v);
@@ -380,7 +380,7 @@ namespace Nopenttd
  * @param signalbit the signal
  * @return the state of the signal
  */
-        public static SignalState GetSingleSignalState(TileIndex t, byte signalbit)
+        public static SignalState GetSingleSignalState(this TileIndex t, byte signalbit)
         {
             return (SignalState) BitMath.HasBit(GetSignalStates(t), signalbit);
         }
@@ -411,7 +411,7 @@ namespace Nopenttd
  * @param signalbit the signal
  * @return true if and only if the signal is present
  */
-        public static bool IsSignalPresent(TileIndex t, byte signalbit)
+        public static bool IsSignalPresent(this TileIndex t, byte signalbit)
         {
             return BitMath.HasBit(GetPresentSignals(t), signalbit);
         }
@@ -545,23 +545,23 @@ namespace Nopenttd
             RAIL_GROUND_HALF_SNOW = 14,
         };
 
-        public static void SetRailGroundType(TileIndex t, RailGroundType rgt)
+        public static void SetRailGroundType(this TileIndex t, RailGroundType rgt)
         {
             Map._m[t].m4 = BitMath.SB(Map._m[t].m4, 0, 4, rgt);
         }
 
-        public static RailGroundType GetRailGroundType(TileIndex t)
+        public static RailGroundType GetRailGroundType(this TileIndex t)
         {
             return (RailGroundType) BitMath.GB(Map._m[t].m4, 0, 4);
         }
 
-        public static bool IsSnowRailGround(TileIndex t)
+        public static bool IsSnowRailGround(this TileIndex t)
         {
             return GetRailGroundType(t) == RailGroundType.RAIL_GROUND_ICE_DESERT;
         }
 
 
-        public static void MakeRailNormal(TileIndex t, Owner o, TrackBits b, RailType r)
+        public static void MakeRailNormal(this TileIndex t, Owner o, TrackBits b, RailType r)
         {
             TileMap.SetTileType(t, TileType.MP_RAILWAY);
             TileMap.SetTileOwner(t, o);
@@ -574,7 +574,7 @@ namespace Nopenttd
         }
 
 
-        public static void MakeRailDepot(TileIndex t, Owner o, DepotID did, DiagDirection d, RailType r)
+        public static void MakeRailDepot(this TileIndex t, Owner o, DepotID did, DiagDirection d, RailType r)
         {
             TileMap.SetTileType(t, TileType.MP_RAILWAY);
             TileMap.SetTileOwner(t, o);
