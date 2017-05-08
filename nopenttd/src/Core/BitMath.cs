@@ -130,9 +130,9 @@ namespace Nopenttd.Core
          * @return The new value of the old value with the bit set
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int SetBit(ref int x, byte y)
+        public static int SetBit(int x, byte y)
 {
-	return x = (int)(x | ((int)1U << y));
+	return (int)(x | ((int)1U << y));
 }
 
 
@@ -165,9 +165,9 @@ namespace Nopenttd.Core
          * @return The new value of the old value with the bit cleared
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ClrBit(ref int x, byte y)
+        public static int ClrBit(int x, byte y)
 {
-	return x = (int)(x & ~((int)1U << y));
+	return (int)(x & ~((int)1U << y));
 }
 
         /**

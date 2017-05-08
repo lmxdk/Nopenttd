@@ -85,6 +85,13 @@ public class Dedicated
         }
     }
 
+    public struct SpriteGroup { }
 
-    
+    public struct SpriteID { }
+    public struct CursorID { }
+    public struct CompanyID { }
+
+
+    /** List of rail type labels. */
+    //typedef SmallVector<RailTypeLabel, 4> RailTypeLabelList;
 }
