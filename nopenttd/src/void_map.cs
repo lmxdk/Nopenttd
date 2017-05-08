@@ -9,26 +9,28 @@
 
 /** @file void_map.h Map accessors for void tiles. */
 
-#ifndef VOID_MAP_H
-#define VOID_MAP_H
+using Nopenttd.Tiles;
 
-#include "tile_map.h"
+namespace Nopenttd
+{
 
+    public static class VoidMap {
 /**
  * Make a nice void tile ;)
  * @param t the tile to make void
  */
-static inline void MakeVoid(TileIndex t)
-{
-	SetTileType(t, MP_VOID);
-	SetTileHeight(t, 0);
-	_m[t].m1 = 0;
-	_m[t].m2 = 0;
-	_m[t].m3 = 0;
-	_m[t].m4 = 0;
-	_m[t].m5 = 0;
-	_me[t].m6 = 0;
-	_me[t].m7 = 0;
-}
+    public static void MakeVoid(this TileIndex t)
+    {
+        TileMap.SetTileType(t, TileType.MP_VOID);
+        TileMap.SetTileHeight(t, 0);
+        Map._m[t].m1 = 0;
+        Map._m[t].m2 = 0;
+        Map._m[t].m3 = 0;
+        Map._m[t].m4 = 0;
+        Map._m[t].m5 = 0;
+        Map._me[t].m6 = 0;
+        Map._me[t].m7 = 0;
+    }
 
-#endif /* VOID_MAP_H */
+    }
+}
