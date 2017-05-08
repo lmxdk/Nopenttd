@@ -612,7 +612,7 @@ namespace Nopenttd
          * @return Minimum height of the tile
          */
 
-        private static int GetTileZ(TileIndex tile)
+        public static int GetTileZ(TileIndex tile)
         {
             if (Map.TileX(tile) == Map.MapMaxX() || Map.TileY(tile) == Map.MapMaxY()) return 0;
 

@@ -645,7 +645,7 @@ namespace Nopenttd
             Map._m[t].m3 = rat;
             Map._m[t].m4 = 0;
             Map._m[t].m5 = RoadTileType.ROAD_TILE_CROSSING << 6 | roaddir;
-            BitMath.SB(Map._me[t].m6, 2, 4, 0);
+            Map._me[t].m6 = BitMath.SB(Map._me[t].m6, 2, 4, 0);
             Map._me[t].m7 = rot << 6 | road;
             SetRoadOwner(t, RoadType.ROADTYPE_TRAM, tram);
         }
@@ -666,7 +666,7 @@ namespace Nopenttd
             Map._m[t].m3 = 0;
             Map._m[t].m4 = 0;
             Map._m[t].m5 = RoadTileType.ROAD_TILE_DEPOT << 6 | dir;
-            BitMath.SB(Map._me[t].m6, 2, 4, 0);
+            Map._me[t].m6 = BitMath.SB(Map._me[t].m6, 2, 4, 0);
             Map._me[t].m7 = RoadTypeToRoadTypes(rt) << 6 | owner;
             SetRoadOwner(t, RoadType.ROADTYPE_TRAM, owner);
         }
