@@ -61,13 +61,13 @@ namespace Nopenttd.Core
          * @return The new value of \a x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint SB(ref uint x, byte s, byte n, uint d)
+        public static uint SB(uint x, byte s, byte n, uint d)
 {
 	x &= (uint)(~((((uint)1U << n) - 1) << s));
 	x |= (uint)(d << s);
 	return x;
 }
-        public static byte SB(ref byte x, byte s, byte n, uint d)
+        public static byte SB(byte x, byte s, byte n, uint d)
         {
             x &= (byte)(~((((byte)1U << n) - 1) << s));
             x |= (byte)(d << s);

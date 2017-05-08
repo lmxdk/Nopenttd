@@ -211,7 +211,7 @@ namespace Nopenttd
          * @pre IsTileType(t, MP_WATER)
          */
         //inline
-        static bool IsWater(TileIndex t)
+        public static bool IsWater(TileIndex t)
         {
             return GetWaterTileType(t) == WaterTileType.WATER_TILE_CLEAR;
         }
@@ -223,7 +223,7 @@ namespace Nopenttd
  * @pre IsTileType(t, MP_WATER)
  */
 
-        static bool IsSea(TileIndex t)
+        public static bool IsSea(TileIndex t)
         {
             return IsWater(t) && GetWaterClass(t) == WaterClass.WATER_CLASS_SEA;
         }

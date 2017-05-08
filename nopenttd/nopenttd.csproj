@@ -287,6 +287,12 @@
   <ItemGroup>
     <Compile Include="src\rail.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\road.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\rail_map.cs" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
