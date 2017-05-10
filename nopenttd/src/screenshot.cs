@@ -7,25 +7,29 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file signs_func.h Functions related to signs. */
+/** @file screenshot.h Functions to make screenshots. */
 
-#ifndef SIGNS_FUNC_H
-#define SIGNS_FUNC_H
+namespace Nopenttd
+{
+/** Type of requested screenshot */
+    public enum ScreenshotType
+    {
+        /// Screenshot of viewport.
+        SC_VIEWPORT,
 
-#include "signs_type.h"
-#include "tile_type.h"
+        /// Raw screenshot from blitter buffer.
+        SC_CRASHLOG,
 
-struct Window;
-extern SignID _new_sign_id;
+        /// Fully zoomed in screenshot of the visible area.
+        SC_ZOOMEDIN,
 
-void UpdateAllSignVirtCoords();
-void PlaceProc_Sign(TileIndex tile);
+        /// Zoomed to default zoom level screenshot of the visible area.
+        SC_DEFAULTZOOM,
 
-/* signs_gui.cpp */
-void ShowRenameSignWindow(const Sign *si);
-void HandleClickOnSign(const Sign *si);
-void DeleteRenameSignWindow(SignID sign);
+        /// World screenshot.
+        SC_WORLD,
 
-Window *ShowSignList();
-
-#endif /* SIGNS_FUNC_H */
+        /// Heightmap of the world.
+        SC_HEIGHTMAP,
+    }
+}
