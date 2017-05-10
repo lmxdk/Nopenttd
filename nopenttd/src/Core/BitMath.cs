@@ -14,6 +14,14 @@ using System.Runtime.CompilerServices;
 
 namespace Nopenttd.Core
 {
+    /*Linqpad helper
+     * var types = new [] {"int", "uint", "long", "ulong", "short", "ushort", "byte", "sbyte"};
+
+	foreach (var type in types)
+	{
+		$@"method".Dump();;
+	}
+     */
     public class BitMath
     {
         /**
@@ -37,8 +45,37 @@ namespace Nopenttd.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint GB(uint x, byte s, byte n)
 {
-	return (x >> s) & (((uint)1U << n) - 1);
+	return (x >> s) & (((uint)1 << n) - 1);
 }
+        public static int GB(int x, byte s, byte n)
+        {
+            return (x >> s) & ((1 << n) - 1);
+        }
+        public static ushort GB(ushort x, byte s, byte n)
+        {
+            return (ushort)((x >> s) & ((1 << n) - 1));
+        }
+        public static short GB(short x, byte s, byte n)
+        {
+            return (short)((x >> s) & ((1 << n) - 1));
+        }
+        public static ulong GB(ulong x, byte s, byte n)
+        {
+            return (ulong)((x >> s) & (ulong)((1L << n) - 1L));
+        }
+        public static long GB(long x, byte s, byte n)
+        {
+            return (long)((x >> s) & ((1 << n) - 1));
+        }
+
+        public static byte GB(byte x, byte s, byte n)
+        {
+            return (byte)((x >> s) & ((1 << n) - 1));
+        }
+        public static sbyte GB(sbyte x, byte s, byte n)
+        {
+            return (sbyte)((x >> s) & ((1 << n) - 1));
+        }
 
         /**
          * Set \a n bits in \a x starting at bit \a s to \a d
@@ -67,7 +104,45 @@ namespace Nopenttd.Core
 	x |= (uint)(d << s);
 	return x;
 }
-        public static byte SB(byte x, byte s, byte n, uint d)
+        public static int SB(int x, byte s, byte n, int d)
+        {
+            x &= (int)(~((((int)1U << n) - 1) << s));
+            x |= (int)(d << s);
+            return x;
+        }
+        public static ushort SB(ushort x, byte s, byte n, ushort d)
+        {
+            x &= (ushort)(~((((ushort)1U << n) - 1) << s));
+            x |= (ushort)(d << s);
+            return x;
+        }
+        public static short SB(short x, byte s, byte n, short d)
+        {
+            x &= (short)(~((((short)1U << n) - 1) << s));
+            x |= (short)(d << s);
+            return x;
+        }
+
+        public static ulong SB(ulong x, byte s, byte n, ulong d)
+        {
+            x &= (ulong)(~((((ulong)1U << n) - 1) << s));
+            x |= (ulong)(d << s);
+            return x;
+        }
+        public static long SB(long x, byte s, byte n, long d)
+        {
+            x &= (long)(~((((long)1U << n) - 1) << s));
+            x |= (long)(d << s);
+            return x;
+        }
+        public static sbyte SB(sbyte x, byte s, byte n, sbyte d)
+        {
+            x &= (sbyte)(~((((sbyte)1U << n) - 1) << s));
+            x |= (sbyte)(d << s);
+            return x;
+        }
+
+        public static byte SB(byte x, byte s, byte n, byte d)
         {
             x &= (byte)(~((((byte)1U << n) - 1) << s));
             x |= (byte)(d << s);
@@ -92,12 +167,56 @@ namespace Nopenttd.Core
          * @return The new value of \a x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint AB( uint x, byte s, byte n, uint i)
-{
-	uint mask = ((((uint)1U << n) - 1) << s);
-	x = (uint)((x & ~mask) | ((x + (i << s)) & mask));
-	return x;
-}
+        public static int AB(int x, byte s, byte n, int i)
+        {
+            int mask = ((((int)1U << n) - 1) << s);
+            x = (int)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static uint AB(uint x, byte s, byte n, uint i)
+        {
+            uint mask = ((((uint)1U << n) - 1) << s);
+            x = (uint)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static long AB(long x, byte s, byte n, long i)
+        {
+            long mask = ((((long)1U << n) - 1) << s);
+            x = (long)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static ulong AB(ulong x, byte s, byte n, ulong i)
+        {
+            ulong mask = ((((ulong)1U << n) - 1) << s);
+            x = (ulong)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static short AB(short x, byte s, byte n, short i)
+        {
+            short mask = (short)(((1 << n) - 1) << s);
+            x = (short)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static ushort AB(ushort x, byte s, byte n, ushort i)
+        {
+            ushort mask = (ushort)(((1 << n) - 1) << s);
+            x = (ushort)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static byte AB(byte x, byte s, byte n, byte i)
+        {
+            byte mask = (byte)(((1 << n) - 1) << s);
+            x = (byte)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+        public static sbyte AB(sbyte x, byte s, byte n, sbyte i)
+        {
+            sbyte mask = (sbyte)(((1 << n) - 1) << s);
+            x = (sbyte)((x & ~mask) | ((x + (i << s)) & mask));
+            return x;
+        }
+
+
 
         /**
          * Checks if a bit in a value is set.
@@ -113,9 +232,39 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool HasBit(int x, byte y)
-{
-	return (x & ((int)1U << y)) != 0;
-}
+        {
+            return (x & ((int)1U << y)) != 0;
+        }
+        public static bool HasBit(uint x, byte y)
+        {
+            return (x & ((uint)1U << y)) != 0;
+        }
+        public static bool HasBit(long x, byte y)
+        {
+            return (x & ((long)1U << y)) != 0;
+        }
+        public static bool HasBit(ulong x, byte y)
+        {
+            return (x & ((ulong)1U << y)) != 0;
+        }
+        public static bool HasBit(short x, byte y)
+        {
+            return (x & ((short)1U << y)) != 0;
+        }
+        public static bool HasBit(ushort x, byte y)
+        {
+            return (x & ((ushort)1U << y)) != 0;
+        }
+        public static bool HasBit(byte x, byte y)
+        {
+            return (x & ((byte)1U << y)) != 0;
+        }
+        public static bool HasBit(sbyte x, byte y)
+        {
+            return (x & ((sbyte)1U << y)) != 0;
+        }
+
+
 
         /**
          * Set a bit in a variable.
@@ -131,9 +280,39 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SetBit(int x, byte y)
-{
-	return (int)(x | ((int)1U << y));
-}
+        {
+            return (int)(x | ((int)1U << y));
+        }
+        public static uint SetBit(uint x, byte y)
+        {
+            return (uint)(x | ((uint)1U << y));
+        }
+        public static long SetBit(long x, byte y)
+        {
+            return (long)(x | ((long)1U << y));
+        }
+        public static ulong SetBit(ulong x, byte y)
+        {
+            return (ulong)(x | ((ulong)1U << y));
+        }
+        public static short SetBit(short x, byte y)
+        {
+            return (short)(x | ((short)1U << y));
+        }
+        public static ushort SetBit(ushort x, byte y)
+        {
+            return (ushort)(x | ((ushort)1U << y));
+        }
+        public static byte SetBit(byte x, byte y)
+        {
+            return (byte)(x | ((byte)1U << y));
+        }
+        public static sbyte SetBit(sbyte x, byte y)
+        {
+            return (sbyte)(x | ((sbyte)1U << y));
+        }
+
+
 
 
         /**
@@ -147,7 +326,35 @@ namespace Nopenttd.Core
          * @return The new value of x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int SetBits(ref int x, byte y)
+        public static int SetBits(int x, int y)
+        {
+            return x |= y;
+        }
+        public static uint SetBits(uint x, uint y)
+        {
+            return x |= y;
+        }
+        public static long SetBits(long x, long y)
+        {
+            return x |= y;
+        }
+        public static ulong SetBits(ulong x, ulong y)
+        {
+            return x |= y;
+        }
+        public static short SetBits(short x, short y)
+        {
+            return x |= y;
+        }
+        public static ushort SetBits(ushort x, ushort y)
+        {
+            return x |= y;
+        }
+        public static byte SetBits(byte x, byte y)
+        {
+            return x |= y;
+        }
+        public static sbyte SetBits(sbyte x, sbyte y)
         {
             return x |= y;
         }
@@ -166,9 +373,39 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ClrBit(int x, byte y)
-{
-	return (int)(x & ~((int)1U << y));
-}
+        {
+            return (int)(x & ~((int)1 << y));
+        }
+        public static uint ClrBit(uint x, byte y)
+        {
+            return (uint)(x & ~((uint)1 << y));
+        }
+        public static long ClrBit(long x, byte y)
+        {
+            return (long)(x & ~((long)1 << y));
+        }
+        public static ulong ClrBit(ulong x, byte y)
+        {
+            return (ulong)(x & ~((ulong)1 << y));
+        }
+        public static short ClrBit(short x, byte y)
+        {
+            return (short)(x & ~((short)1 << y));
+        }
+        public static ushort ClrBit(ushort x, byte y)
+        {
+            return (ushort)(x & ~((ushort)1 << y));
+        }
+        public static byte ClrBit(byte x, byte y)
+        {
+            return (byte)(x & ~((byte)1 << y));
+        }
+        public static sbyte ClrBit(sbyte x, byte y)
+        {
+            return (sbyte)(x & ~((sbyte)1 << y));
+        }
+
+
 
         /**
          * Clears several bits in a variable.
@@ -181,11 +418,38 @@ namespace Nopenttd.Core
          * @return The new value of x
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ClearBits(int x, byte y)
+        public static int ClearBits(int x, int y)
         {
-            return x &= ~y;
+            return (int)(x & ~y);
         }
-
+        public static uint ClearBits(uint x, uint y)
+        {
+            return (uint)(x & ~y);
+        }
+        public static long ClearBits(long x, long y)
+        {
+            return (long)(x & ~y);
+        }
+        public static ulong ClearBits(ulong x, ulong y)
+        {
+            return (ulong)(x & ~y);
+        }
+        public static short ClearBits(short x, short y)
+        {
+            return (short)(x & ~y);
+        }
+        public static ushort ClearBits(ushort x, ushort y)
+        {
+            return (ushort)(x & ~y);
+        }
+        public static byte ClearBits(byte x, byte y)
+        {
+            return (byte)(x & ~y);
+        }
+        public static sbyte ClearBits(sbyte x, sbyte y)
+        {
+            return (sbyte)(x & ~y);
+        }
 
         /**
          * Toggles a bit in a variable.
@@ -201,21 +465,51 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ToggleBit(int x, byte y)
-{
-	return x = (int)(x ^ ((int)1U << y));
-}
+        {
+            return (int)(x ^ ((int)1 << y));
+        }
+        public static uint ToggleBit(uint x, byte y)
+        {
+            return (uint)(x ^ ((uint)1 << y));
+        }
+        public static long ToggleBit(long x, byte y)
+        {
+            return (long)(x ^ ((long)1 << y));
+        }
+        public static ulong ToggleBit(ulong x, byte y)
+        {
+            return (ulong)(x ^ ((ulong)1 << y));
+        }
+        public static short ToggleBit(short x, byte y)
+        {
+            return (short)(x ^ ((short)1 << y));
+        }
+        public static ushort ToggleBit(ushort x, byte y)
+        {
+            return (ushort)(x ^ ((ushort)1 << y));
+        }
+        public static byte ToggleBit(byte x, byte y)
+        {
+            return (byte)(x ^ ((byte)1 << y));
+        }
+        public static sbyte ToggleBit(sbyte x, byte y)
+        {
+            return (sbyte)(x ^ ((sbyte)1 << y));
+        }
 
 
-/**
- * Returns the first non-zero bit in a 6-bit value (from right).
- *
- * Returns the position of the first bit that is not zero, counted from the
- * LSB. Ie, 110100 returns 2, 000001 returns 0, etc. When x == 0 returns
- * 0.
- *
- * @param x The 6-bit value to check the first zero-bit
- * @return The first position of a bit started from the LSB or 0 if x is 0.
- */
+
+
+        /**
+         * Returns the first non-zero bit in a 6-bit value (from right).
+         *
+         * Returns the position of the first bit that is not zero, counted from the
+         * LSB. Ie, 110100 returns 2, 000001 returns 0, etc. When x == 0 returns
+         * 0.
+         *
+         * @param x The 6-bit value to check the first zero-bit
+         * @return The first position of a bit started from the LSB or 0 if x is 0.
+         */
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte FIND_FIRST_BIT(int x) => _ffb_64[x];
@@ -256,10 +550,40 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-      public static int KillFirstBit(int value)
-{
-	return value &= (int)(value - 1);
-}
+        public static int KillFirstBit(int value)
+        {
+            return (int)(value & (value - 1));
+        }
+        public static uint KillFirstBit(uint value)
+        {
+            return (uint)(value & (value - 1));
+        }
+        public static long KillFirstBit(long value)
+        {
+            return (long)(value & (value - 1));
+        }
+        public static ulong KillFirstBit(ulong value)
+        {
+            return (ulong)(value & (value - 1));
+        }
+        public static short KillFirstBit(short value)
+        {
+            return (short)(value & (value - 1));
+        }
+        public static ushort KillFirstBit(ushort value)
+        {
+            return (ushort)(value & (value - 1));
+        }
+        public static byte KillFirstBit(byte value)
+        {
+            return (byte)(value & (value - 1));
+        }
+        public static sbyte KillFirstBit(sbyte value)
+        {
+            return (sbyte)(value & (value - 1));
+        }
+
+
 
         /**
          * Counts the number of set bits in a variable.
@@ -267,23 +591,111 @@ namespace Nopenttd.Core
          * @param value the value to count the number of bits in.
          * @return the number of bits.
          */
+
+        /* This loop is only called once for every bit set by clearing the lowest
+ * bit in each loop. The number of bits is therefore equal to the number of
+ * times the loop was called. It was found at the following website:
+ * http://graphics.stanford.edu/~seander/bithacks.html */
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
         public static uint CountBits(int value)
-{
-	uint num;
+        {
+            uint num;
 
-	/* This loop is only called once for every bit set by clearing the lowest
-	 * bit in each loop. The number of bits is therefore equal to the number of
-	 * times the loop was called. It was found at the following website:
-	 * http://graphics.stanford.edu/~seander/bithacks.html */
+            for (num = 0; value != 0; num++)
+            {
+                value &= (int)(value - 1);
+            }
 
-	for (num = 0; value != 0; num++) {
-		value &= (int)(value - 1);
-	}
+            return num;
+        }
 
-	return num;
-}
+        public static uint CountBits(uint value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (uint)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(long value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (long)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(ulong value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (ulong)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(short value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (short)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(ushort value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (ushort)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(byte value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (byte)(value - 1);
+            }
+
+            return num;
+        }
+
+        public static uint CountBits(sbyte value)
+        {
+            uint num;
+
+            for (num = 0; value != 0; num++)
+            {
+                value &= (sbyte)(value - 1);
+            }
+
+            return num;
+        }
+
+
 
         /**
          * Test whether \a value has exactly 1 bit set
@@ -293,10 +705,40 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-      public static bool HasExactlyOneBit(int value)
-{
-	return value != 0 && (value & (value - 1)) == 0;
-}
+        public static bool HasExactlyOneBit(int value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(uint value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(long value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(ulong value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(short value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(ushort value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(byte value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+        public static bool HasExactlyOneBit(sbyte value)
+        {
+            return value != 0 && (value & (value - 1)) == 0;
+        }
+
+
 
         /**
          * Test whether \a value has at most 1 bit set
@@ -306,10 +748,40 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-      public static bool HasAtMostOneBit(int value)
-{
-	return (value & (value - 1)) == 0;
-}
+        public static bool HasAtMostOneBit(int value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(uint value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(long value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(ulong value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(short value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(ushort value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(byte value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+        public static bool HasAtMostOneBit(sbyte value)
+        {
+            return (value & (value - 1)) == 0;
+        }
+
+
 
         /**
          * ROtate \a x Left by \a n
@@ -322,10 +794,42 @@ namespace Nopenttd.Core
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
-      public static int ROL(int x, byte n)
-{
-	return (int)(x << n | x >> (sizeof(int) * 8 - n));
-}
+        public static int ROL(int x, byte n)
+        {
+            return (int)(x << n | x >> (sizeof(int) * 8 - n));
+        }
+        public static uint ROL(uint x, byte n)
+        {
+            return (uint)(x << n | x >> (sizeof(uint) * 8 - n));
+        }
+        public static long ROL(long x, byte n)
+        {
+            return (long)(x << n | x >> (sizeof(long) * 8 - n));
+        }
+        public static ulong ROL(ulong x, byte n)
+        {
+            return (ulong)(x << n | x >> (sizeof(ulong) * 8 - n));
+        }
+        public static short ROL(short x, byte n)
+        {
+            return (short)(x << n | x >> (sizeof(short) * 8 - n));
+        }
+        public static ushort ROL(ushort x, byte n)
+        {
+            return (ushort)(x << n | x >> (sizeof(ushort) * 8 - n));
+        }
+        public static byte ROL(byte x, byte n)
+        {
+            return (byte)(x << n | x >> (sizeof(byte) * 8 - n));
+        }
+        public static sbyte ROL(sbyte x, byte n)
+        {
+            return (sbyte)(x << n | x >> (sizeof(sbyte) * 8 - n));
+        }
+
+
+
+
 
         /**
          * ROtate \a x Right by \a n
@@ -339,24 +843,37 @@ namespace Nopenttd.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ROR(int x, byte n)
         {
-	        return (int)(x >> n | x << (sizeof(int) * 8 - n));
+            return (int)(x >> n | x << (sizeof(int) * 8 - n));
         }
-
-
-        /**
-         * ROtate \a x Right by \a n
-         *
-         * @note Assumes a byte has 8 bits
-         * @param x The value which we want to rotate
-         * @param n The number how many we want to rotate
-         * @pre n < sizeof(T) * 8
-         * @return A bit rotated number
-         */
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint RotateRight(uint x, byte n)
+        public static uint ROR(uint x, byte n)
         {
             return (uint)(x >> n | x << (sizeof(uint) * 8 - n));
         }
+        public static long ROR(long x, byte n)
+        {
+            return (long)(x >> n | x << (sizeof(long) * 8 - n));
+        }
+        public static ulong ROR(ulong x, byte n)
+        {
+            return (ulong)(x >> n | x << (sizeof(ulong) * 8 - n));
+        }
+        public static short ROR(short x, byte n)
+        {
+            return (short)(x >> n | x << (sizeof(short) * 8 - n));
+        }
+        public static ushort ROR(ushort x, byte n)
+        {
+            return (ushort)(x >> n | x << (sizeof(ushort) * 8 - n));
+        }
+        public static byte ROR(byte x, byte n)
+        {
+            return (byte)(x >> n | x << (sizeof(byte) * 8 - n));
+        }
+        public static sbyte ROR(sbyte x, byte n)
+        {
+            return (sbyte)(x >> n | x << (sizeof(sbyte) * 8 - n));
+        }
+        
 
         /**
          * Do an operation for each set bit in a value.
