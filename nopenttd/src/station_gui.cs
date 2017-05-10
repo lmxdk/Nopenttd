@@ -7,20 +7,21 @@
  * See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with OpenTTD. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** @file subsidy_func.h Functions related to subsidies. */
+/** @file station_gui.h Contains enums and function declarations connected with stations GUI */
 
-#ifndef SUBSIDY_FUNC_H
-#define SUBSIDY_FUNC_H
+namespace Nopenttd
+{
 
-#include "core/geometry_type.hpp"
-#include "station_type.h"
-#include "company_type.h"
-#include "cargo_type.h"
+/** Types of cargo to display for station coverage. */
+    public enum StationCoverageType
+    {
+        /// Draw only passenger class cargoes.
+        SCT_PASSENGERS_ONLY,
 
-Pair SetupSubsidyDecodeParam(const struct Subsidy *s, bool mode);
-void DeleteSubsidyWith(SourceType type, SourceID index);
-bool CheckSubsidised(CargoID cargo_type, CompanyID company, SourceType src_type, SourceID src, const Station *st);
-void RebuildSubsidisedSourceAndDestinationCache();
-void DeleteSubsidy(struct Subsidy *s);
+        /// Draw all non-passenger class cargoes.
+        SCT_NON_PASSENGERS_ONLY,
 
-#endif /* SUBSIDY_FUNC_H */
+        /// Draw all cargoes.
+        SCT_ALL,
+    }
+}
