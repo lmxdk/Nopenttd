@@ -353,6 +353,8 @@
     <Compile Include="src\widgets\group_widget.cs" />
     <Compile Include="src\widgets\highscore_widget.cs" />
     <Compile Include="src\widgets\industry_widget.cs" />
+    <Compile Include="src\table\clear_land.cs" />
+    <Compile Include="src\table\sprites.cs" />
     <Content Include="src\widgets\intro_widget.cs" />
     <Compile Include="src\widgets\link_graph_legend_widget.cs" />
     <Compile Include="src\widgets\main_widget.cs" />

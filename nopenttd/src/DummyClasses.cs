@@ -90,6 +90,7 @@ public class Dedicated
     public struct SpriteID { }
     public struct CursorID { }
     public struct CompanyID { }
+    public struct PaletteID { }
 
 
     /** List of rail type labels. */
