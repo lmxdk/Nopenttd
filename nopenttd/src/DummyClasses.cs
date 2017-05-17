@@ -90,8 +90,15 @@ public class Dedicated
     public struct SpriteID { }
     public struct CursorID { }
     public struct CompanyID { }
-
+    public class CompanyManagerFace { }
+    public struct OwnerByte { }
+    public struct CompanyMask { }
 
     /** List of rail type labels. */
     //typedef SmallVector<RailTypeLabel, 4> RailTypeLabelList;
+
+    //typedef Pool<Company, CompanyID, 1, MAX_COMPANIES> CompanyPool;
+    //extern CompanyPool _company_pool;
+
+
 }
