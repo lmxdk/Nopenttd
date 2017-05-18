@@ -70,6 +70,7 @@
     <Compile Include="src\LanguagePackGlyphSearcher.cs" />
     <Compile Include="src\LanguagePackHeader.cs" />
     <Compile Include="src\MissingGlyphSearcher.cs" />
+    <Compile Include="src\newgrf.cs" />
     <Compile Include="src\news_type.cs" />
     <Compile Include="src\ScenarioScanner.cs" />
     <Compile Include="src\Settings\Settings.cs" />
@@ -81,6 +82,8 @@
     <Compile Include="src\story_type.cs" />
     <Compile Include="src\StringParameters.cs" />
     <Compile Include="src\StringTokenBuilder.cs" />
+    <Compile Include="src\table\palettes.cs" />
+    <Compile Include="src\table\pricebase.cs" />
     <Compile Include="src\TarScanner.cs" />
     <Compile Include="src\Tiles\LevelMode.cs" />
     <Compile Include="src\Tiles\TileConstants.cs" />
@@ -99,7 +102,6 @@
   <ItemGroup>
     <Folder Include="src\Core\Math\" />
     <Folder Include="src\Threading\" />
-    <Folder Include="src\widgets\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Core\BitMath.cs" />
@@ -201,6 +203,7 @@
     <Compile Include="src\tilearea_type.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\widgets\ai_widget.cs" />
     <Compile Include="src\window_type.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -316,6 +319,77 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\station_map.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\clear_map.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\depot_map.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\station_gui.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\screenshot.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="src\newgrf_callbacks.cs" />
+    <Content Include="src\newgrf_properties.h" />
+    <Compile Include="src\widgets\airport_widget.cs" />
+    <Compile Include="src\widgets\autoreplace_widget.cs" />
+    <Compile Include="src\widgets\bootstrap_widget.cs" />
+    <Compile Include="src\widgets\bridge_widget.cs" />
+    <Compile Include="src\widgets\build_vehicle_widget.cs" />
+    <Compile Include="src\widgets\cheat_widget.cs" />
+    <Compile Include="src\widgets\company_widget.cs" />
+    <Compile Include="src\widgets\console_widget.cs" />
+    <Compile Include="src\widgets\date_widget.cs" />
+    <Compile Include="src\widgets\depot_widget.cs" />
+    <Compile Include="src\widgets\dock_widget.cs" />
+    <Compile Include="src\widgets\dropdown_widget.cs" />
+    <Compile Include="src\widgets\engine_widget.cs" />
+    <Compile Include="src\widgets\error_widget.cs" />
+    <Compile Include="src\widgets\fios_widget.cs" />
+    <Compile Include="src\widgets\genworld_widget.cs" />
+    <Compile Include="src\widgets\goal_widget.cs" />
+    <Compile Include="src\widgets\graph_widget.cs" />
+    <Compile Include="src\widgets\group_widget.cs" />
+    <Compile Include="src\widgets\highscore_widget.cs" />
+    <Compile Include="src\widgets\industry_widget.cs" />
+    <Compile Include="src\table\clear_land.cs" />
+    <Compile Include="src\table\sprites.cs" />
+    <Content Include="src\widgets\intro_widget.cs" />
+    <Compile Include="src\widgets\link_graph_legend_widget.cs" />
+    <Compile Include="src\widgets\main_widget.cs" />
+    <Compile Include="src\widgets\misc_widget.cs" />
+    <Compile Include="src\widgets\music_widget.cs" />
+    <Compile Include="src\widgets\network_chat_widget.cs" />
+    <Compile Include="src\widgets\network_content_widget.cs" />
+    <Compile Include="src\widgets\network_widget.cs" />
+    <Compile Include="src\widgets\newgrf_debug_widget.cs" />
+    <Compile Include="src\widgets\newgrf_widget.cs" />
+    <Compile Include="src\widgets\news_widget.cs" />
+    <Compile Include="src\widgets\object_widget.cs" />
+    <Compile Include="src\widgets\order_widget.cs" />
+    <Compile Include="src\widgets\osk_widget.cs" />
+    <Compile Include="src\widgets\rail_widget.cs" />
+    <Compile Include="src\widgets\road_widget.cs" />
+    <Content Include="src\widgets\settings_widget.cs" />
+    <Compile Include="src\widgets\sign_widget.cs" />
+    <Compile Include="src\widgets\smallmap_widget.cs" />
+    <Compile Include="src\widgets\station_widget.cs" />
+    <Compile Include="src\widgets\statusbar_widget.cs" />
+    <Compile Include="src\widgets\story_widget.cs" />
+    <Compile Include="src\widgets\subsidy_widget.cs" />
+    <Compile Include="src\widgets\terraform_widget.cs" />
+    <Compile Include="src\widgets\timetable_widget.cs" />
+    <Compile Include="src\widgets\toolbar_widget.cs" />
+    <Compile Include="src\widgets\town_widget.cs" />
+    <Compile Include="src\widgets\transparency_widget.cs" />
+    <Content Include="src\widgets\tree_widget.cs" />
+    <Compile Include="src\widgets\vehicle_widget.cs" />
+    <Compile Include="src\widgets\viewport_widget.cs" />
+    <Compile Include="src\widgets\waypoint_widget.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\company_base.cs" />

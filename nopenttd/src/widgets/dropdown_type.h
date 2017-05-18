@@ -1,4 +1,4 @@
-/* $Id$ */
+namespace Nopenttd.Widgets {/* $Id$ */
 
 /*
  * This file is part of OpenTTD.
@@ -12,19 +12,19 @@
 #ifndef WIDGETS_DROPDOWN_TYPE_H
 #define WIDGETS_DROPDOWN_TYPE_H
 
-#include "../window_type.h"
-#include "../gfx_func.h"
-#include "../core/smallvec_type.hpp"
-#include "table/strings.h"
+
+
+
+
 
 /**
  * Base list item class from which others are derived. If placed in a list it
  * will appear as a horizontal line in the menu.
  */
 class DropDownListItem {
-public:
-	int result;  ///< Result code to return to window on selection
-	bool masked; ///< Masked and unselectable item
+public:// Result code to return to window on selection
+	int result;  // Masked and unselectable item
+	bool masked; 
 
 	DropDownListItem(int result, bool masked) : result(result), masked(masked) {}
 	virtual ~DropDownListItem() {}
@@ -39,8 +39,8 @@ public:
  * Common string list item.
  */
 class DropDownListStringItem : public DropDownListItem {
-public:
-	StringID string; ///< String ID of item
+public:// String ID of item
+	StringID string; 
 
 	DropDownListStringItem(StringID string, int result, bool masked) : DropDownListItem(result, masked), string(string) {}
 	virtual ~DropDownListStringItem() {}
@@ -48,7 +48,7 @@ public:
 	virtual bool Selectable() const { return true; }
 	virtual uint Width() const;
 	virtual void Draw(int left, int right, int top, int bottom, bool sel, int bg_colour) const;
-	virtual StringID String() const { return this->string; }
+	virtual StringID String() const { return this.string; }
 
 	static int CDECL NatSortFunc(const DropDownListItem * const *first, const DropDownListItem * const *second);
 };
@@ -57,8 +57,8 @@ public:
  * String list item with parameters.
  */
 class DropDownListParamStringItem : public DropDownListStringItem {
-public:
-	uint64 decode_params[10]; ///< Parameters of the string
+public:// Parameters of the string
+	uint64 decode_params[10]; 
 
 	DropDownListParamStringItem(StringID string, int result, bool masked) : DropDownListStringItem(string, result, masked) {}
 	virtual ~DropDownListParamStringItem() {}
@@ -89,4 +89,4 @@ void ShowDropDownListAt(Window *w, const DropDownList *list, int selected, int b
 
 void ShowDropDownList(Window *w, const DropDownList *list, int selected, int button, uint width = 0, bool auto_width = false, bool instant_close = false);
 
-#endif /* WIDGETS_DROPDOWN_TYPE_H */
+#endif /* WIDGETS_DROPDOWN_TYPE_H */}

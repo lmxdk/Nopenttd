@@ -93,6 +93,7 @@ public class Dedicated
     public class CompanyManagerFace { }
     public struct OwnerByte { }
     public struct CompanyMask { }
+    public struct PaletteID { }
 
     /** List of rail type labels. */
     //typedef SmallVector<RailTypeLabel, 4> RailTypeLabelList;

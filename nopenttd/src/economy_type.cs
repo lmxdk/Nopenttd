@@ -287,10 +287,18 @@ namespace Nopenttd
         PriceCategory category;
 
         /// GRF Feature that decides whether price multipliers apply locally or globally, #GSF_END if none.
-        uint grf_feature;
+        GrfSpecFeature grf_feature;
 
         /// Fallback price multiplier for new prices but old grfs.
         Price fallback_price;
+
+        public PriceBaseSpec(Money start_price, PriceCategory category, GrfSpecFeature grf_feature, Price fallback_price)
+        {
+            this.start_price= start_price;
+            this.category = category;
+            this.grf_feature = grf_feature;
+            this.fallback_price = fallback_price;
+        }
     }
 
     public class EconomyConstants
